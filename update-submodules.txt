@@ -1,0 +1,4 @@
+git submodule update --remote external/Funk   # pulls to the latest main (as set above)
+git add external/Funk
+git commit -m "Bump Funk to $(git -C external/Funk rev-parse --short HEAD)"
+git push

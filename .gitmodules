@@ -1,7 +1,3 @@
-[submodule "external/repo"]
-	path = external/repo
-	url = git@github.com:mark1russell7/Funk.git
-	branch = main
 [submodule "external/Funk"]
 	path = external/Funk
 	url = git@github.com:mark1russell7/Funk.git

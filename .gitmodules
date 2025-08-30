@@ -2,3 +2,7 @@
 	path = external/Funk
 	url = git@github.com:mark1russell7/Funk.git
 	branch = main
+[submodule "external/concat-src"]
+	path = external/concat-src
+	url = git@github.com-personal:mark1russell7/concat-src.git
+	branch = main

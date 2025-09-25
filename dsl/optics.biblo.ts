@@ -1,12 +1,6 @@
 import { OLens, oCompose, recordKey } from "./optics";
 
-/**
- * A tiny "optics pack" for a Biblo-like object graph.
- * For now, Biblo is a plain object whose top-level keys are exact class names.
- * These helpers build Optional-first lenses for those paths.
- */
-
-/** Build an optic for an object property path: P('a','b','c') */
+/** Build an optic for an object path: P('a','b','c') */
 export const P = (...keys: string[]): OLens<any, any> => {
   if (keys.length === 0) throw new Error("P() requires at least one key");
   let lens = recordKey<any>(keys[0]);
@@ -20,7 +14,7 @@ export const Path = (...keys: string[]) => ({
   lens: () => P(...keys),
 });
 
-/** Common, prebuilt optics for example Biblo entries */
+/** Common Biblo optics */
 export const BibloOptics = {
   vector: {
     entry: P("vector"),
@@ -43,4 +37,16 @@ export const BibloOptics = {
       radians: P("angle", "defaults", "radians"),
     }
   }
+};
+
+/** Peer helpers — return {peer, lens} pairs for building NDV from multiple peers. */
+export const BibloPeers = {
+  posX: (peer: string) => ({ peer, lens: oCompose(recordKey<any>("pos"), recordKey<any>("x")) }),
+  posY: (peer: string) => ({ peer, lens: oCompose(recordKey<any>("pos"), recordKey<any>("y")) }),
+  posZ: (peer: string) => ({ peer, lens: oCompose(recordKey<any>("pos"), recordKey<any>("z")) }),
+  posXYZ: (peer: string) => ({
+    x: { peer, lens: oCompose(recordKey<any>("pos"), recordKey<any>("x")) },
+    y: { peer, lens: oCompose(recordKey<any>("pos"), recordKey<any>("y")) },
+    z: { peer, lens: oCompose(recordKey<any>("pos"), recordKey<any>("z")) },
+  }),
 };

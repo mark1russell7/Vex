@@ -1,4 +1,5 @@
-import { Optional, some, none } from "../external/Funk/optional/optional";
+import { Optional, some, none, isFound } from "../external/Funk/optional/optional";
+import { fold as foldEither } from "../external/Funk/optional/either";
 import type { Monoid } from "../math/algebra/monoid";
 
 export type Traversal<A> = {
@@ -26,7 +27,7 @@ function extract<A>(xs: Optional<A>[]): { arr: A[]; anyNone: boolean } {
   const arr: A[] = [];
   let anyNone = false;
   for (const o of xs) {
-    if ((o as any).tag === 'Right') arr.push((o as any).right);
+    if (isFound(o)) arr.push(foldEither(o, () => null as any, r => r));
     else anyNone = true;
   }
   return { arr, anyNone };
@@ -45,13 +46,19 @@ export function makeTraversal<A>(opts: {
 
     map: <B>(f: (a: A) => B) =>
       makeTraversal<B>({
-        values: xs.map(o => (o.tag === 'Right' ? some(f((o as any).right)) : none<B>())),
+        values: xs.map(o => isFound(o) ? some(f(foldEither(o, () => null as any, r => r))) : none<B>()),
         invoke: opts.invoke as any
       }),
 
     compact: () => {
       const ys: Optional<NonNullable<A>>[] =
-        xs.map(o => (o.tag === 'Right' && (o as any).right != null ? some((o as any).right as NonNullable<A>) : none()));
+        xs.map(o =>
+          isFound(o)
+            ? (foldEither(o, () => null as any, r => r) != null
+                ? some(foldEither(o, () => null as any, r => r) as NonNullable<A>)
+                : none())
+            : none()
+        );
       return makeTraversal<NonNullable<A>>({ values: ys, invoke: opts.invoke as any });
     },
 
@@ -66,8 +73,8 @@ export function makeTraversal<A>(opts: {
     fold: <M>(M: Monoid<M>, f: (a: A) => M) => {
       let acc: M | undefined = undefined;
       for (const o of xs) {
-        if (o.tag === 'Right') {
-          const v = f((o as any).right);
+        if (isFound(o)) {
+          const v = f(foldEither(o, () => null as any, r => r));
           acc = acc === undefined ? v : M.concat(acc, v);
         }
       }
@@ -97,7 +104,7 @@ export function makeTraversal<A>(opts: {
       : (() => {
           let acc: M | undefined = undefined;
           for (const o of xs) {
-            const v = f((o as any).right as A);
+            const v = f(foldEither(o, () => null as any, r => r) as A);
             acc = acc === undefined ? v : M.concat(acc, v);
           }
           return acc === undefined ? none<M>() : some(acc);

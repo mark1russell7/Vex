@@ -1,4 +1,3 @@
-// optional/utils.ts
 import { Optional, none, some, isFound } from "./external/Funk/optional/optional";
 import { fold as foldEither } from "./external/Funk/optional/either";
 
@@ -12,7 +11,8 @@ export const chainOpt = <A, B>(oa: Optional<A>, f: (a: A) => Optional<B>): Optio
 
 /** Applicative ap over Optional */
 export const apOpt = <A, B>(of: Optional<(a: A) => B>, oa: Optional<A>): Optional<B> =>
-  foldEither(of,
+  foldEither(
+    of,
     () => none<B>(),
     (fn) => foldEither(oa, () => none<B>(), (a) => some(fn(a)))
   );
@@ -21,8 +21,8 @@ export const apOpt = <A, B>(of: Optional<(a: A) => B>, oa: Optional<A>): Optiona
 export const sequenceArrayOpt = <A>(xs: Optional<A>[]): Optional<A[]> => {
   const out: A[] = [];
   for (const o of xs) {
-    const ok = foldEither(o, () => false, (a) => (out.push(a), true));
-    if (!ok) return none<A[]>();
+    const pushed = foldEither(o, () => false, (a) => (out.push(a), true));
+    if (!pushed) return none<A[]>();
   }
   return some(out);
 };

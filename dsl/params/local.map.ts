@@ -1,17 +1,18 @@
-import { type Optional, none, some } from "../../external/Funk/optional/optional";
+import { type Optional, none, some, isFound } from "../../external/Funk/optional/optional";
+import { fold as foldEither } from "../../external/Funk/optional/either";
 import { ValueKind } from "../value.enum";
 
 export type LocalEntry<D> =
-  | { tag: "domain"; value: D }
-  | { tag: "scalar"; value: number }
-  | { tag: "boolean"; value: boolean };
-
+  | { tag: "domain";  value: D }
+  | { tag: "scalar";  value: number }
+  | { tag: "boolean"; value: boolean }
+  | { tag: "any";     value: any };  
 export class LocalMap<D> {
   private readonly m: ReadonlyMap<string, LocalEntry<D>>;
   constructor(m: ReadonlyMap<string, LocalEntry<D>> = new Map()) { this.m = m; }
 
-  set(name: string, entry: LocalEntry<D>): LocalMap<D> { 
-    const n = new Map(this.m); n.set(name, entry); return new LocalMap(n); 
+  set(name: string, entry: LocalEntry<D>): LocalMap<D> {
+    const n = new Map(this.m); n.set(name, entry); return new LocalMap(n);
   }
   remove(name: string): LocalMap<D> { const n = new Map(this.m); n.delete(name); return new LocalMap(n); }
   rename(from: string, to: string): LocalMap<D> {
@@ -32,18 +33,22 @@ export class LocalMap<D> {
   clear(): LocalMap<D> { return new LocalMap(); }
 
   get(name: string): Optional<LocalEntry<D>> {
-    if (!this.m.has(name)) return none();
-    return some(this.m.get(name)!);
+    return this.m.has(name) ? some(this.m.get(name)!) : none();
   }
 
+  /** Only enforce kinds when a shape is provided. When absent, 'any' is allowed. */
   require(shape: Record<string, ValueKind>): Optional<LocalMap<D>> {
     for (const [k, kind] of Object.entries(shape)) {
       const e = this.get(k);
-      if (e.tag === 'Left') return none<LocalMap<D>>();
-      const v = (e as any).right as LocalEntry<D>;
-      if (kind === ValueKind.Domain  && v.tag !== "domain")  return none();
-      if (kind === ValueKind.Scalar  && v.tag !== "scalar")  return none();
-      if (kind === ValueKind.Boolean && v.tag !== "boolean") return none();
+      if (!isFound(e)) return none<LocalMap<D>>();
+      const ok = foldEither(e, () => false, (v) => {
+        if (kind === ValueKind.Domain)  return v.tag === "domain";
+        if (kind === ValueKind.Scalar)  return v.tag === "scalar";
+        if (kind === ValueKind.Boolean) return v.tag === "boolean";
+        // Unknown → accept anything (domain/number/boolean/any)
+        return true;
+      });
+      if (!ok) return none<LocalMap<D>>();
     }
     return some(this);
   }
@@ -52,8 +57,8 @@ export class LocalMap<D> {
     const out: any[] = [];
     for (const k of order) {
       const e = this.get(k);
-      if (e.tag === 'Left') return none<any[]>();
-      out.push((e as any).right.value);
+      if (!isFound(e)) return none<any[]>();
+      out.push(foldEither(e, () => undefined, r => r.value));
     }
     return some(out);
   }

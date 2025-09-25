@@ -2,13 +2,14 @@ import type { DomainAdapter } from "../domain/domain.adapter";
 import { domainExpr, DomainExpr, normalizeArgs } from "../domain/domain.expr";
 import { StepSwitchTo, StepType, type Step } from "../expr/expr.step";
 import type { Scope } from "../scope/scope";
-import { none, type Optional } from "../../external/Funk/optional/optional";
+import { none, type Optional, isFound } from "../../external/Funk/optional/optional";
 import { makeMapScope } from "../scope/map.scope";
 import { makeArrayScope } from "../scope/array.scope";
 import { makeMatrixScope } from "../scope/matrix.scope";
 import { makeTraversal, Traversal } from "../traversal";
 import { withLocal } from "./local.mixin";
 import { ValueKind } from "../value.enum";
+import { fold as foldEither } from "../../external/Funk/optional/either";
 
 export class BaseChain<Obj, D> {
   protected steps: Step<D>[] = [];
@@ -59,7 +60,8 @@ export class BaseChain<Obj, D> {
     for (const k of keys) {
       scope.setFocusByKey(k);
       const base = program(none(), scope);
-      out.push(mapFn ? (base.tag === 'Right' ? mapFn(base, scope) : base) : base);
+      if (mapFn && isFound(base)) out.push(mapFn(base, scope));
+      else out.push(base);
     }
     const invoke = (a: any, op: string, b: any) => { const fn = a?.[op]; return typeof fn === 'function' ? fn.call(a,b) : undefined; };
     return makeTraversal<R>({ values: out as Optional<R>[], invoke });
@@ -76,7 +78,9 @@ export class BaseChain<Obj, D> {
     for (const k of keys) {
       scope.setFocusByKey(k);
       const base = program(none(), scope, { strict: true });
-      const mapped = mapFn ? (base.tag === 'Right' ? mapFn(base, scope) : none()) : base;
+      const mapped = mapFn
+        ? (isFound(base) ? mapFn(base, scope) : none())
+        : base;
       out.push(mapped);
     }
     const invoke = (a: any, op: string, b: any) => { const fn = a?.[op]; return typeof fn === 'function' ? fn.call(a,b) : undefined; };
@@ -101,30 +105,15 @@ export function matrixChain<Obj extends Record<string, any>, D>(adapter: DomainA
 /* -------------------------------------------------------------
  * Helper factories for **typed local** (compile-time param shapes)
  * ------------------------------------------------------------- */
-
-export function mapChainTyped<
-  Obj extends Record<string, any>,
-  D,
-  S extends Record<string, ValueKind>
->(adapter: DomainAdapter<D>, map: Record<string, Obj>) {
+export function mapChainTyped<Obj extends Record<string, any>, D, S extends Record<string, ValueKind>>(adapter: DomainAdapter<D>, map: Record<string, Obj>) {
   const Chain = withLocal<Obj, D, typeof BaseChain, S>(BaseChain as any);
   return new (Chain as any)(adapter, makeMapScope(map, adapter)) as InstanceType<typeof Chain>;
 }
-
-export function arrayChainTyped<
-  Obj extends Record<string, any>,
-  D,
-  S extends Record<string, ValueKind>
->(adapter: DomainAdapter<D>, arr: Obj[]) {
+export function arrayChainTyped<Obj extends Record<string, any>, D, S extends Record<string, ValueKind>>(adapter: DomainAdapter<D>, arr: Obj[]) {
   const Chain = withLocal<Obj, D, typeof BaseChain, S>(BaseChain as any);
   return new (Chain as any)(adapter, makeArrayScope(arr, adapter)) as InstanceType<typeof Chain>;
 }
-
-export function matrixChainTyped<
-  Obj extends Record<string, any>,
-  D,
-  S extends Record<string, ValueKind>
->(adapter: DomainAdapter<D>, grid: Obj[][]) {
+export function matrixChainTyped<Obj extends Record<string, any>, D, S extends Record<string, ValueKind>>(adapter: DomainAdapter<D>, grid: Obj[][]) {
   const Chain = withLocal<Obj, D, typeof BaseChain, S>(BaseChain as any);
   return new (Chain as any)(adapter, makeMatrixScope(grid, adapter)) as InstanceType<typeof Chain>;
 }

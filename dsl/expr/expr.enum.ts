@@ -1,4 +1,3 @@
-
 export enum ExpressionType {
   ConstD = "constD",
   ConstS = "constS",

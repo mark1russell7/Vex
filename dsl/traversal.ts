@@ -1,85 +1,78 @@
-// dsl/traversal.ts
-import { Optional, none, some } from "../external/Funk/optional/optional";
-import { reduceWithMonoidOpt, mapOpt, chainOpt } from "../optional.utils";
-import { Monoid } from "../math/algebra/monoid";
-import { fold as foldEither } from "../external/Funk/optional/either";
+import { Optional, some, none } from "../external/Funk/optional/optional";
+import type { Monoid } from "../math/algebra/monoid";
 
 export type Traversal<A> = {
   results: () => Optional<A>[];
   map: <B>(f: (a: A) => B) => Traversal<B>;
   compact: () => Traversal<NonNullable<A>>;
-  // Booleans
   any: (f?: (a: A) => boolean) => boolean;
   all: (f?: (a: A) => boolean) => boolean;
   none: (f?: (a: A) => boolean) => boolean;
-  // Numbers
   sum: (f?: (a: A) => number) => number;
   min: (f?: (a: A) => number) => number | undefined;
   max: (f?: (a: A) => number) => number | undefined;
-  // Monoids
   fold: <M>(M: Monoid<M>, f: (a: A) => M) => Optional<M>;
-  // Domain reduction by method name
   reduceBy: (op: string) => Optional<A>;
+  anyOpt: (f?: (a: A) => boolean) => Optional<boolean>;
+  allOpt: (f?: (a: A) => boolean) => Optional<boolean>;
+  noneOpt: (f?: (a: A) => boolean) => Optional<boolean>;
+  sumOpt: (f?: (a: A) => number) => Optional<number>;
+  minOpt: (f?: (a: A) => number) => Optional<number>;
+  maxOpt: (f?: (a: A) => number) => Optional<number>;
+  foldStrict: <M>(M: Monoid<M>, f:(a:A)=>M) => Optional<M>;
 };
+
+function extract<A>(xs: Optional<A>[]): { arr: A[]; anyNone: boolean } {
+  const arr: A[] = [];
+  let anyNone = false;
+  for (const o of xs) {
+    if ((o as any).tag === 'Right') arr.push((o as any).right);
+    else anyNone = true;
+  }
+  return { arr, anyNone };
+}
 
 export function makeTraversal<A>(opts: {
   values: Optional<A>[];
   invoke?: (a: A, op: string, b: A) => A | undefined;
 }): Traversal<A> {
   const xs = opts.values;
-
-  const toArray = (): A[] => {
-    const acc: A[] = [];
-    for (const o of xs) foldEither(o, () => {}, (a) => { acc.push(a); });
-    return acc;
-  };
+  const toArray = () => extract(xs).arr;
+  const hasNone = () => extract(xs).anyNone;
 
   return {
     results: () => xs,
 
     map: <B>(f: (a: A) => B) =>
-      makeTraversal<B>({ values: xs.map((o) => mapOpt(o, f)) }),
+      makeTraversal<B>({
+        values: xs.map(o => (o.tag === 'Right' ? some(f((o as any).right)) : none<B>())),
+        invoke: opts.invoke as any
+      }),
 
     compact: () => {
-      const ys: Optional<NonNullable<A>>[] = xs.map((o) =>
-        chainOpt(o, (a) => (a == null ? none<NonNullable<A>>() : some(a as NonNullable<A>)))
-      );
-      return makeTraversal<NonNullable<A>>({ values: ys });
+      const ys: Optional<NonNullable<A>>[] =
+        xs.map(o => (o.tag === 'Right' && (o as any).right != null ? some((o as any).right as NonNullable<A>) : none()));
+      return makeTraversal<NonNullable<A>>({ values: ys, invoke: opts.invoke as any });
     },
 
-    any: (f?: (a: A) => boolean) => {
-      const arr = toArray();
-      return f ? arr.some(f) : arr.some((x: any) => Boolean(x));
-    },
+    any: (f?) => { const arr = toArray(); return f ? arr.some(f) : arr.some((x: any) => !!x); },
+    all: (f?) => { const arr = toArray(); return arr.length === 0 ? true : (f ? arr.every(f) : arr.every((x: any) => !!x)); },
+    none: (f?) => { const arr = toArray(); return f ? arr.every(a => !f(a)) : arr.every((x: any) => !x); },
 
-    all: (f?: (a: A) => boolean) => {
-      const arr = toArray();
-      if (arr.length === 0) return true;
-      return f ? arr.every(f) : arr.every((x: any) => Boolean(x));
-    },
+    sum: (f?) => toArray().map(f ?? ((x: any) => x as number)).reduce((s, n) => s + n, 0),
+    min: (f?) => { const arr = toArray().map(f ?? ((x: any) => x as number)); return arr.length ? Math.min(...arr) : undefined; },
+    max: (f?) => { const arr = toArray().map(f ?? ((x: any) => x as number)); return arr.length ? Math.max(...arr) : undefined; },
 
-    none: (f?: (a: A) => boolean) => {
-      const arr = toArray();
-      return f ? arr.every((a) => !f(a)) : arr.every((x: any) => !Boolean(x));
+    fold: <M>(M: Monoid<M>, f: (a: A) => M) => {
+      let acc: M | undefined = undefined;
+      for (const o of xs) {
+        if (o.tag === 'Right') {
+          const v = f((o as any).right);
+          acc = acc === undefined ? v : M.concat(acc, v);
+        }
+      }
+      return acc === undefined ? none<M>() : some(acc);
     },
-
-    sum: (f?: (a: A) => number) => {
-      const arr = f ? toArray().map(f) : (toArray() as any as number[]);
-      return arr.reduce((s, n) => s + n, 0);
-    },
-
-    min: (f?: (a: A) => number) => {
-      const arr = f ? toArray().map(f) : (toArray() as any as number[]);
-      return arr.length ? Math.min(...arr) : undefined;
-    },
-
-    max: (f?: (a: A) => number) => {
-      const arr = f ? toArray().map(f) : (toArray() as any as number[]);
-      return arr.length ? Math.max(...arr) : undefined;
-    },
-
-    fold: <M>(M: Monoid<M>, f: (a: A) => M) =>
-      reduceWithMonoidOpt(xs.map((o) => mapOpt(o, f)), M),
 
     reduceBy: (op: string) => {
       const arr = toArray();
@@ -92,5 +85,22 @@ export function makeTraversal<A>(opts: {
       }
       return some(acc);
     },
+
+    anyOpt: (f?) => hasNone() ? none() : some((f ? toArray().some(f) : toArray().some((x: any) => !!x))),
+    allOpt: (f?) => hasNone() ? none() : some((toArray().length === 0) ? true : (f ? toArray().every(f) : toArray().every((x: any) => !!x))),
+    noneOpt: (f?) => hasNone() ? none() : some((f ? toArray().every(a => !f(a)) : toArray().every((x: any) => !x))),
+    sumOpt: (f?) => hasNone() ? none() : some(toArray().map(f ?? ((x: any) => x as number)).reduce((s, n) => s + n, 0)),
+    minOpt: (f?) => hasNone() ? none() : (toArray().length ? some(Math.min(...toArray().map(f ?? ((x: any) => x as number)))) : none()),
+    maxOpt: (f?) => hasNone() ? none() : (toArray().length ? some(Math.max(...toArray().map(f ?? ((x: any) => x as number)))) : none()),
+    foldStrict: <M>(M: Monoid<M>, f: (a: A) => M) => hasNone()
+      ? none<M>()
+      : (() => {
+          let acc: M | undefined = undefined;
+          for (const o of xs) {
+            const v = f((o as any).right as A);
+            acc = acc === undefined ? v : M.concat(acc, v);
+          }
+          return acc === undefined ? none<M>() : some(acc);
+        })(),
   };
 }

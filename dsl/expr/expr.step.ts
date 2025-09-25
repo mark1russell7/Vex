@@ -15,7 +15,6 @@ export enum StepSwitchTo {
 
 export type StepExpression<E extends StepType, D> = Expression<E, D>;
 
-
 export type StepLoadFromFocus<D> = StepExpression<StepType.Select, Record<"prop", string>>;
 export type StepSwitchFocus<D> = StepExpression<StepType.Switch, Record<"to", StepSwitchTo> & Partial<Record<"key", string | number>>>;
 export type StepInvoke<D> = StepExpression<StepType.Invoke, Record<"op", string> & Record<"args", ArgRef<D>[]>>;

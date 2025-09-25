@@ -1,0 +1,12 @@
+{
+  "name": "vex",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "vitest": "^3.2.4"
+  }
+}

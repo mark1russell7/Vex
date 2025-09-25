@@ -1,9 +1,7 @@
-/* ---------------- Public factory ---------------- */
-
 import { BaseChain } from "./chain/base.chain";
 import { type DomainAdapter } from "./domain/domain.adapter";
 import { domainExpr } from "./domain/domain.expr";
-import { type ArrayLike, type KeysOfType, type MapLike, type MatrixLike } from "../lenses";
+import { type ArrayLike, type MapLike, type MatrixLike } from "./lenses";
 import { makeArrayScope } from "./scope/array.scope";
 import { makeMapScope } from "./scope/map.scope";
 import { makeMatrixScope } from "./scope/matrix.scope";

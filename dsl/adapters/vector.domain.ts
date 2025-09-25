@@ -1,5 +1,3 @@
-// vector-domain.ts
-import { Monoid } from "../../math/algebra/monoid";
 import { arrayChain, mapChain, matrixChain } from "../chain/base.chain";
 import { DomainAdapter } from "../domain/domain.adapter";
 import { domainExpr } from "../domain/domain.expr";
@@ -17,7 +15,7 @@ export const VectorAdapter: DomainAdapter<Vector> = {
     if (name.startsWith("any") || name.startsWith("all")) return ValueKind.Boolean;
     if (name === "length" || name === "area" || name === "sum") return ValueKind.Scalar;
     return undefined;
-  }
+  },
 };
 
 (function annotateVector() {
@@ -26,19 +24,20 @@ export const VectorAdapter: DomainAdapter<Vector> = {
   annotateOp(P, "multiply",  { commutative: true, associative: true, liftScalar: true });
   annotateOp(P, "subtract",  { liftScalar: true });
   annotateOp(P, "divide",    { liftScalar: true });
-  annotateOp(P, "clamp",     { /* numeric args; no lift */ });
+  annotateOp(P, "scale",     { /* scalar only */ });
 })();
 
-// DSL facade for Vector (corrected generics: <Obj, Vector>)
-export const vectorExpr        = () => domainExpr<Vector>();
+/** ALWAYS return an array (empty when unknown) */
+VectorAdapter.methodParams = (name: string) => {
+  if (name === "add" || name === "subtract" || name === "multiply" || name === "divide")
+    return [{ name: "rhs", kind: ValueKind.Domain }];
+  if (name === "rotate") return [{ name: "radians", kind: ValueKind.Scalar }];
+  if (name === "scale")  return [{ name: "factor",  kind: ValueKind.Scalar }];
+  return []; // <- key change: never undefined
+};
+
+// Facade
+export const vectorExpr = () => domainExpr<Vector>();
 export const vectorMapChain    = <Obj extends Record<string, any>>(map: Record<string, Obj>) => mapChain<Obj, Vector>(VectorAdapter, map);
 export const vectorArrayChain  = <Obj extends Record<string, any>>(arr: Obj[])              => arrayChain<Obj, Vector>(VectorAdapter, arr);
 export const vectorMatrixChain = <Obj extends Record<string, any>>(grid: Obj[][])           => matrixChain<Obj, Vector>(VectorAdapter, grid);
-
-// Vector monoids (for fold)
-export const VectorMonoid = {
-  add: (): Monoid<Vector> => ({
-    empty: Vector.scalar(0),
-    concat: (a, b) => a.add(b),
-  }),
-};

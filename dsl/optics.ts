@@ -1,4 +1,4 @@
-import { Optional, some, none } from "../external/Funk/optional/optional";
+import { Optional, some, none, isFound } from "../external/Funk/optional/optional";
 
 /** Optional Lens: both directions Optional. */
 export type OLens<A, B> = {
@@ -8,14 +8,21 @@ export type OLens<A, B> = {
 
 export const oLens = <A, B>(get: OLens<A,B>["get"], set: OLens<A,B>["set"]): OLens<A,B> => ({ get, set });
 
-export const oCompose = <A, B, C>(ab: OLens<A,B>, bc: OLens<B,C>): OLens<A,C> =>
+export const oCompose = <A, B, C>(
+  ab : OLens<A,B>, 
+  bc : OLens<B,C>
+) : OLens<A,C> =>
   oLens(
-    (a) => ab.get(a).tag === "Right" ? bc.get((ab.get(a) as any).right) : none<C>(),
-    (a, c) => ab.get(a).tag === "Right"
-      ? (bc.set((ab.get(a) as any).right, c).tag === "Right"
-          ? ab.set(a, (bc.set((ab.get(a) as any).right, c) as any).right)
-          : none<A>())
-      : none<A>()
+    (a) => 
+      isFound(ab.get(a)) 
+        ? bc.get((ab.get(a) as any).right) 
+        : none<C>(),
+    (a, c) => 
+      isFound(ab.get(a))
+        ? (isFound(bc.set((ab.get(a) as any).right, c))
+            ? ab.set(a, (bc.set((ab.get(a) as any).right, c) as any).right)
+            : none<A>())
+        : none<A>()
   );
 
 export const oGetter = <A, B>(get: (a: A) => Optional<B>): OLens<A,B> =>

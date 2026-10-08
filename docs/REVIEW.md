@@ -866,6 +866,7 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 - P5 done: the grid pilot in `@vex/pilots`. One Vex program gives the same rectangles as the grid layout of Graph on random items. Graph is a private repository, so the pilot compares with a new implementation of the same behavior, not with a copy of the Graph code. The owner can do the direct comparison in a local copy.
 - P5 done: `compile`. The interpreter is a closure compiler, so `evaluate` and `compile` have one semantics (spec rule EVAL.COMPILE, property P10).
 - §13 done: the site publishes `llms.txt` and the JSON Schema of the IR. A property test keeps the schema equal to `isExpr`.
+- §9.2 done: each workflow uses actions by commit SHA. `.github/renovate.json` keeps the pins current, after the owner installs the Renovate app.
 - The packed layout of Graph is an ordered fold. It is not a good fit for Vex formulas.
 - Later work: faster op lookup (a cache of methods for each prototype), one vector library for the family (§13), and a tree space with `parent` and `children` axes.
 - The owner decides these items, because they change other repositories or public names. The items are D9 (the name of the repository), D11 (the template fixes upstream) and D12 (the workspace `CLAUDE.md`). The shared Optional package and the first npm release are also decisions of the owner.

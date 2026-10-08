@@ -84,11 +84,13 @@ class GridSpace<O> implements Space<GridKey, O> {
   readonly kind: SpaceKind = "grid";
   readonly keys: readonly GridKey[];
   readonly #cells: ReadonlyMap<string, O>;
+  readonly #coords: ReadonlyMap<string, readonly number[]>;
 
   constructor(rows: readonly (readonly O[])[]) {
-    const entries = rows.flatMap((row, i) => row.map((cell, j): [GridKey, O] => [`${i},${j}`, cell]));
+    const entries = rows.flatMap((row, i) => row.map((cell, j): [GridKey, O, readonly number[]] => [`${i},${j}`, cell, Object.freeze([i, j])]));
     this.keys = Object.freeze(entries.map(([k]) => k));
-    this.#cells = new Map(entries);
+    this.#cells = new Map(entries.map(([k, cell]) => [k, cell]));
+    this.#coords = new Map(entries.map(([k, , c]) => [k, c]));
   }
 
   has(k: string): k is GridKey {
@@ -98,7 +100,7 @@ class GridSpace<O> implements Space<GridKey, O> {
     return this.#cells.get(k);
   }
   coords(k: string): readonly number[] | undefined {
-    return this.has(k) ? k.split(",").map(Number) : undefined;
+    return this.#coords.get(k);
   }
   keyAt(coords: readonly number[]): GridKey | undefined {
     const k = coords.join(",");

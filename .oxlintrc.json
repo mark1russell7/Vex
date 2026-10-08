@@ -42,7 +42,6 @@
     ]
   },
   "ignorePatterns": [
-    "packages/legacy/**",
     "packages/cli/**",
     "docs/**",
     "**/dist/**",

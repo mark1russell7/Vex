@@ -20,10 +20,9 @@ Write all prose of this repository in the style of ASD-STE100 Simplified Technic
 - Make a new package with `pnpm package add <name> --preset=ts`. Do not write `package.json` or `tsconfig.json` by hand.
 - Each package has a `tsconfig.test.json`. `pnpm typecheck` checks the source and the tests.
 - `@vex/core` has no runtime dependencies. Other packages depend on it, and it depends on none of them.
-- Do not change `@vex/legacy`. The plan deletes it at the end of phase P2.
 
 ## Tests
 
 - Each normative statement of the spec has a requirement ID. Each requirement ID has a test that names it.
-- Each defect from `docs/archive/2026-07/BUGS.md` (V-001 to V-042) has a regression test that names its ID.
+- Each defect from `docs/archive/2026-07/BUGS.md` (V-001 to V-042) has a row in `spec/regressions.md`, and each row with the status `test` has a test that names its ID.
 - Run `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm lint:ste` before a commit.

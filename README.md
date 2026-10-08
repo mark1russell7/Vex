@@ -17,14 +17,13 @@ separated.explain("A"); // a trace of each step
 
 ## Status
 
-Vex is in a rebuild. The plan is in [`docs/REVIEW.md`](./docs/REVIEW.md).
+Vex 1.0 is in development. The specification is in [`spec/README.md`](./spec/README.md), and the plan is in [`docs/REVIEW.md`](./docs/REVIEW.md). The code before the rebuild is in the git history (package `@vex/legacy`, removed after the parity tests passed).
 
 | Package | Contents |
 |---|---|
 | [`@vex/core`](./packages/core) | The kernel: spaces, addresses, the expression IR, domains, the interpreter, traces |
 | [`@vex/domains`](./packages/domains) | Domains for 2D vectors, named-component vectors, colors and angles |
 | [`@vex/testkit`](./packages/testkit) | Arbitraries, law checks and the reference interpreter for property tests |
-| [`@vex/legacy`](./packages/legacy) | The code before the rebuild. The plan deletes it when the new core reaches parity. |
 | [`@vex/cli`](./packages/cli) | The workspace commands of the template |
 
 ## Commands

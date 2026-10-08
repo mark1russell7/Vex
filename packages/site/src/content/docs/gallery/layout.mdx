@@ -1,5 +1,23 @@
 ---
-title: layout
+title: Layout
+description: The reason that Vex exists. A Vex program pushes overlapping boxes apart.
 ---
 
-This page is in progress.
+import LayoutDemo from "../../../components/LayoutDemo.tsx";
+import Stepper from "../../../components/Stepper.tsx";
+
+Vex came from a layout engine. A layout has boxes, and each rule of a layout relates a box to other boxes: "this box starts where that box ends", "these boxes do not overlap".
+
+## Push the boxes apart
+
+The program below gives each box a push. It reads the centre of the box at the origin. For each other box that it overlaps, it reads the direction from that centre to its centre. The reduction adds the directions.
+
+Drag a box onto another box: red arrows show the pushes. Select "Relax" to move each box along its push until no boxes overlap.
+
+<LayoutDemo client:visible />
+
+The test of the `where` option reads both boxes: `origin()` reads at the origin, and a bare field name reads at the target. The old Vex could not express this, because its focus was one mutable value.
+
+## Overlap, step by step
+
+<Stepper client:visible program="overlaps" />

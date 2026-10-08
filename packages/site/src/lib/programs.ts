@@ -126,8 +126,58 @@ export const ERROR_PROGRAMS: Readonly<Record<string, SiteProgram & { readonly fi
   },
 };
 
+/** The programs of the tour. Each lesson adds one call to the chain of the lesson before it. */
+export const TOUR_PROGRAMS: readonly SiteProgram[] = [
+  { id: "tour-1", title: "1. Read a field at the focus", code: `root.from("position")`, build: (root) => root.from("position").program },
+  { id: "tour-2", title: "2. Apply an op", code: `root.from("position")._.add("size")`, build: (root) => root.from("position")._.add("size").program },
+  {
+    id: "tour-3",
+    title: "3. Read at another key",
+    code: `root.from("position")._.add("size")
+  ._.subtract(root.of("B", "position"))`,
+    build: (root) => root.from("position")._.add("size")._.subtract(root.of("B", "position")).program,
+  },
+  {
+    id: "tour-4",
+    title: "4. Change the value kind",
+    code: `root.from("position")._.add("size")
+  ._.subtract(root.of("B", "position"))
+  ._.length()`,
+    build: (root) => root.from("position")._.add("size")._.subtract(root.of("B", "position"))._.length().program,
+  },
+  {
+    id: "tour-5",
+    title: "5. Move the focus",
+    code: `root.from("position").to("C")._.subtract("position")._.length()`,
+    build: (root) => root.from("position").to("C")._.subtract("position")._.length().program,
+  },
+  {
+    id: "tour-6",
+    title: "6. An axis: each other box",
+    code: `root.from("position")
+  .others((e) => e._.subtract("position")._.length())
+  .values()`,
+    build: (root) => root.from("position").others((e) => e._.subtract("position")._.length()).values().program,
+  },
+  {
+    id: "tour-7",
+    title: "7. Reduce the list",
+    code: `root.from("position")
+  .others((e) => e._.subtract("position")._.length())
+  .min()`,
+    build: (root) => root.from("position").others((e) => e._.subtract("position")._.length()).min().program,
+  },
+  {
+    id: "tour-8",
+    title: "8. Catch an error value",
+    code: `root.from("position")._.divide(0).ifError(root.from("position"))`,
+    build: (root) => root.from("position")._.divide(0).ifError(root.from("position")).program,
+  },
+];
+
 /** This function gives a program by its id. */
-export const programById = (id: string): SiteProgram | undefined => PROGRAMS.find((p) => p.id === id) ?? Object.values(ERROR_PROGRAMS).find((p) => p.id === id);
+export const programById = (id: string): SiteProgram | undefined =>
+  PROGRAMS.find((p) => p.id === id) ?? TOUR_PROGRAMS.find((p) => p.id === id) ?? Object.values(ERROR_PROGRAMS).find((p) => p.id === id);
 
 /** A literal helper for widget code that makes IR by hand. */
 export { lit };

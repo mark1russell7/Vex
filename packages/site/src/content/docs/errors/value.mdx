@@ -1,0 +1,42 @@
+---
+title: "#VALUE!: a value of the wrong kind"
+description: A receiver that no domain accepts, an argument of the wrong kind, or an expression that is not valid.
+sidebar:
+  label: "#VALUE!"
+  order: 3
+---
+
+import Stepper from "../../../components/Stepper.tsx";
+
+`#VALUE!` means that a value has the wrong kind for the place where the program uses it. A spreadsheet gives the same code when a formula adds a text to a number.
+
+<Stepper client:visible program="value" title="An argument of the wrong kind" />
+
+The program adds the boolean `true` to a position. The op `add` of `Vec2Domain` declares a `domain` parameter, so the interpreter checks the argument before the call. The message is `argument 1 of "add" is a boolean, not a Vec2`.
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `not-instance` | No domain accepts the receiver of an op, and no free function has the name of the op. Or an argument of a `domain` parameter is not a value of the domain. |
+| `kind-mismatch` | An argument of a `number`, `boolean` or `string` parameter has another kind. Also a condition of `if`, `and` or `or`, or a `where` test, that is not a boolean. Also an item of the wrong kind in a list reduction. |
+| `bad-expression` | The expression is not valid. For example, a special form without its arguments, or `parse` of a text that is not a Vex expression. |
+
+## How the types prevent it
+
+`._` lists the ops with the parameter types of each op. Thus `._.add(true)` does not compile. A number is a valid argument only for an op that declares `liftScalar`.
+
+```ts
+root.from("position")._.add(1);    // correct: add lifts 1 to the vector (1, 1)
+root.from("position")._.add(true); // type error: a boolean is not a Vec2
+root.from("position")._.dot(5);    // type error: dot does not lift numbers
+```
+
+A program from JSON, or a field with an `unknown` type, can still give `#VALUE!` at run time.
+
+## The fix
+
+- Give a value of the kind that the parameter declares. The [domains](../../reference/domains/) page lists the parameters of each op.
+- Put the domain of the receiver in the list of `vex(...)`. The interpreter finds the op of a value in the first domain that accepts the value.
+
+Refer to [error values](../../learn/errors/) for the other codes.

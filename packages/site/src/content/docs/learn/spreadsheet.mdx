@@ -1,5 +1,96 @@
 ---
-title: spreadsheet
+title: Vex is a spreadsheet
+description: Records are rows, a program is a computed column, and an error is a value in a cell. The spreadsheet lens shows the precedents of each cell.
 ---
 
-This page is in progress.
+import { Aside } from "@astrojs/starlight/components";
+import Sheet from "../../../components/Sheet.tsx";
+
+A spreadsheet formula reads cells relative to its own cell, and one formula fills a column. A Vex program does the same thing over records. In the sheet below, each box is a row, and each program is a computed column.
+
+Select a computed cell. The bar above the table shows the formula, and the fields that the evaluation read become blue. A failed read becomes red. This is the "Trace Precedents" command of a spreadsheet.
+
+<Sheet client:visible programs={["far-corner", "gap-to-b", "nearest"]} />
+
+## The map
+
+| Spreadsheet | Vex |
+|---|---|
+| a row | the record at one key of the space |
+| a column of data | a field of the records |
+| a formula | a program: one expression |
+| fill down | `all()`: the program at each key |
+| a relative reference, for example `B2` | a bare field name, for example `"size"` |
+| an absolute reference, for example `$B$2` | `root.of("B", "position")` |
+| an R1C1 offset, for example `R[-1]C` | `.offset(-1)` in an array, `.offset(-1, 0)` in a grid |
+| `#REF!`, `#N/A`, `#VALUE!` | the same codes, as error values |
+| `IFERROR(x, y)` | `x.ifError(y)` |
+| Trace Precedents | the reads in the events of `explain(k)` |
+
+## One formula, filled down
+
+`all()` evaluates the chain at each key of the space. This is the start axis. The result is a traversal: one result for each key, with reductions over the results.
+
+```ts
+const corners = root.from("position")._.add("size").all();
+
+corners.values();                // [(7, 6), (10, 9), (16, 9), (11, 13)]
+corners.get("B");                // some((10, 9))
+root.from("weight").all().sum(); // some(11)
+```
+
+A spreadsheet copies the formula into each cell of the column. Vex keeps one expression and evaluates it at each origin. The spec law **AXIS.EXTEND** says that the two give the same values. For an expression `e` that does not read the origin, the item at key `k` of `each(all, e)` equals `e` evaluated at the origin `k`.
+
+## Relative and absolute references
+
+A bare field name is a relative reference. It reads at the focus, like `B2` in a formula that you copy down a column. `root.of("B", "position")` is an absolute reference. It reads at the key B from each origin, like `$B$2`.
+
+```ts
+root.from("position")._.add("size")           // relative: this row
+  ._.subtract(root.of("B", "position"));      // absolute: the row B
+```
+
+Select a cell in the column `gap-to-b` of the sheet. The precedents are the position and the size of that row, and the position of B.
+
+<Aside type="caution">
+Only a bare string is a field name. For a string value, use `root.lit("text")`. The old Vex changed each string argument into a reference, so an op with a string parameter did not work.
+</Aside>
+
+## R1C1 offsets in arrays and grids
+
+A record space has names as keys, so it has no "row above". An array space and a grid space have positions. There, the move `offset` is the relative reference of the R1C1 style:
+
+```ts
+const rows = space.array([{ v: 1 }, { v: 2 }, { v: 4 }]);
+const root = vex(NumDomain).over(rows);
+
+// v minus the v of the row above: R[0]C - R[-1]C
+const delta = root.from("v").offset(-1)._.subtract("v");
+
+delta.all().items; // "0": #REF!, "1": 1, "2": 2
+```
+
+`offset(-1)` moves the focus of the later field names. Thus the first `v` reads this row, and the second `v` reads the row above. The first row has no row above, so the result there is `#REF!`. A spreadsheet gives the same error for a reference above row 1.
+
+In a grid, an offset has two numbers. `offset(-1, 0)` is the cell above, like `R[-1]C[0]`. The axis `neighbors(8)` reads the eight cells around the focus. [The Game of Life](../../gallery/life/) uses it for its rule.
+
+## Error values in cells
+
+A failed cell of a spreadsheet holds an error value, for example `#REF!` or `#N/A`. A formula that reads a failed cell also fails. Vex does the same thing: an error goes up the expression tree, and the first error on a path is final.
+
+`ifError(fallback)` is the Vex form of `IFERROR`. It gives the value of the chain, or the fallback when the chain gives an error.
+
+```ts
+root.from("position")._.divide(0)  // #NUM! at each key
+  .ifError(root.from("position")); // the position at each key
+```
+
+A reduction over a column skips error items by default. `strict()` on a traversal, or `{ strict: true }` on an axis reduction, makes the first error the result. Refer to [error values](../errors/) for each code.
+
+## More than a spreadsheet
+
+- **Domain values.** A cell holds a number or a text. A Vex field can hold a `Vec2`, a `Color` or a value of your own domain.
+- **Axes.** A formula reads a fixed set of cells. An axis reads a relation: each other record, the neighbors of a cell, or the targets that pass a test.
+- **Types.** The typed builder accepts only the fields, keys and ops that exist. Thus many errors cannot occur at run time.
+
+Phase P5 of the plan adds `sheet()`. It will evaluate named columns in the order of their dependencies, and a cycle will give `#CYCLE!`.

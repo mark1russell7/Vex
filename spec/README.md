@@ -1,6 +1,6 @@
 # The Vex language, version 1.0
 
-This document is the specification of Vex 1.0. Each normative statement has a requirement ID in square brackets, for example **[EVAL.TOTAL]**. Each requirement ID has at least one test that names it. The test `spec-coverage.test.ts` makes CI fail when an ID has no test, or when a test names an ID that this document does not define.
+This document is the specification of Vex 1.0. Each normative statement has a requirement ID in square brackets, for example `[EVAL.TOTAL]`. Each requirement ID has at least one test that names it. The test `spec-coverage.test.ts` makes CI fail when an ID has no test, or when a test names an ID that this document does not define.
 
 The design and the reasons for it are in [`docs/REVIEW.md`](../docs/REVIEW.md). The v0.9 specification is in [`docs/archive/spec-v0.9.md`](../docs/archive/spec-v0.9.md).
 

@@ -1,5 +1,103 @@
 ---
-title: errors
+title: Error values
+description: Vex does not throw. A failure is a value with a spreadsheet code, a kind, and the path of the node where it started.
 ---
 
-This page is in progress.
+import { Aside } from "@astrojs/starlight/components";
+import Rail from "../../../components/Rail.tsx";
+
+Vex does not throw. When a step fails, the result is an error value with a code, like `#REF!` in a cell of a spreadsheet. The rail below shows each node of a program, in the order that the nodes finish.
+
+A value rides the top track. The node where an error starts has a signpost with the code, and the error stays on the bottom track up to the root. Select another program or another origin in the rail to compare.
+
+<Rail client:visible program="na" />
+
+## The codes
+
+Each code has a page with a live example and the fix. The kind tells the cause in more detail than the code.
+
+| Code | Kinds | Meaning |
+|---|---|---|
+| [`#REF!`](../../errors/ref/) | `unknown-key`, `not-a-pair`, `out-of-bounds`, `no-offset`, `no-grid` | An address or an axis points outside the space. |
+| [`#N/A`](../../errors/na/) | `missing-field`, `empty` | A field has no value, or a reduction has no values. |
+| [`#VALUE!`](../../errors/value/) | `not-instance`, `kind-mismatch`, `bad-expression` | A value has the wrong kind. |
+| [`#NAME?`](../../errors/name/) | `unknown-op`, `unbound` | An op or a variable name does not exist. |
+| [`#NUM!`](../../errors/num/) | `not-finite`, `invalid-value` | A result is not a finite number, or not a valid domain value. |
+| [`#CALC!`](../../errors/calc/) | `threw`, `undefined-result` | An op threw an exception, or gave no value. |
+| [`#ARGS`](../../errors/args/) | `args` | Two or more arguments failed. |
+| [`#CYCLE!`](../../errors/cycle/) | `cycle` | A cycle of named columns. This code is for `sheet()`, a later feature. |
+
+## The parts of an error
+
+```ts
+interface VexError {
+  readonly code: ErrorCode;               // "#REF!"
+  readonly kind: ErrorKind;               // "unknown-key"
+  readonly message: string;               // 'the space has no key "Z"'
+  readonly path: readonly number[];       // the position of the failed node in the tree
+  readonly origin?: string;               // the key where the evaluation started
+  readonly focus?: string;                // the key where references read at the failure
+  readonly op?: string;                   // the op, for an error of an op
+  readonly causes?: readonly VexError[];  // the errors of the arguments, for #ARGS
+  readonly thrown?: unknown;              // the thrown value, for the kind "threw"
+}
+```
+
+`formatError(e)` gives one line of text, for example `#REF! unknown-key: the space has no key "Z"`.
+
+## Three views of one evaluation
+
+| Method | Type | The error |
+|---|---|---|
+| `at(k)` or `value(k)` | `Optional<T>` | lost: the result is `none` |
+| `result(k)` | `Result<T>` | kept in `error` |
+| `explain(k)` | `Trace` | kept, with one event for each node |
+
+Inside the interpreter, each node gives a `Result`. At the boundary, `at(k)` changes the `Result` into an `Optional`. Thus a caller that needs only the value gets `some(value)` or `none`. A caller that needs the reason uses `result(k)`.
+
+```ts
+const quotient = root.from("position")._.divide(0);
+
+quotient.at("A");     // { tag: "none" }
+quotient.result("A"); // { ok: false, error: { code: "#NUM!", kind: "invalid-value", ... } }
+```
+
+## Errors go up the tree
+
+An error in a node goes up to its parent, and the first error on a path is final. The interpreter evaluates all arguments of an op. One failed argument gives its own error. Two or more failed arguments give `#ARGS`, with each error as a cause.
+
+There are two exceptions:
+
+- A `let` binding that fails has an effect only where a `var` reads it.
+- A reduction over an axis skips error items by default. Refer to [axes as relations](../axes/#reduce-the-list).
+
+## Catch an error with ifError
+
+`ifError(fallback)` gives the value of the chain, or the fallback when the chain gives an error. It is like `IFERROR` in a spreadsheet. It is also a special form: the interpreter evaluates the fallback only after an error.
+
+```ts
+// Some records have no field "mass".
+root.from("mass").ifError(1); // the mass, or 1 for a record without a mass
+```
+
+The last lesson of [the tour](../tour/#8-catch-an-error-value) shows `ifError` step by step.
+
+## The trace
+
+`explain(k)` gives one event for each node, in the order that the nodes finish. Each event has these parts:
+
+- the path of the node in the tree, its kind and a short label
+- the origin and the focus of the evaluation at that node
+- the reads of a reference: the key, the path and the success of each read
+- the result of the node.
+
+```ts
+const t = root.from("position")._.add("mass").explain("A");
+
+t.events.map((e) => e.label); // ["position", "mass", "add"]
+t.result;                     // { ok: false, error: { code: "#N/A", kind: "missing-field", ... } }
+```
+
+<Aside type="note">
+The stepper, the spreadsheet lens and the rail on this site all read the same trace.
+</Aside>

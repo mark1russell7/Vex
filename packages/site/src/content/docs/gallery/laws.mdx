@@ -1,5 +1,20 @@
 ---
-title: laws
+title: The law arena
+description: The law checker of @vex/testkit runs in the browser, and it catches a false claim of the old Color.add.
 ---
 
-This page is in progress.
+import LawArena from "../../../components/LawArena.tsx";
+
+A domain declares laws for its ops: `commutative`, `associative`, `idempotent` and an `identity`. An evaluator can use a law, for example to reduce a list in any order. Thus a false claim gives wrong results.
+
+The law checker of `@vex/testkit` turns each claim into a property test with fast-check. It runs here in your browser, with the same code as CI.
+
+<LawArena client:visible />
+
+## The hunt
+
+The old Vex declared that `Color.add` is commutative. But `a.add(b)` kept the alpha of `a`, so `a.add(b)` and `b.add(a)` were different when the alpha values were different. No test found it for a year.
+
+Select "Run the property": fast-check finds a counterexample, and then it makes the counterexample smaller, one step at a time. Select "Next shrink step" to see each step. The last step is the smallest case that breaks the law.
+
+The new `Color.add` keeps the larger alpha. With that change, the law holds, and the arena above shows it.

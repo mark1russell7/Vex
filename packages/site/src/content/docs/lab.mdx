@@ -1,5 +1,20 @@
 ---
-title: lab
+title: The Lab
+description: Build a chain from chips, see the result at each origin and the trace, and change the program as JSON.
+tableOfContents: false
 ---
 
-This page is in progress.
+import Lab from "../../components/Lab.tsx";
+import Stepper from "../../components/Stepper.tsx";
+
+The Lab builds a chain from chips. Each chip adds one call. The chips of the ops come from the domain of the current value: after `length()`, the Lab shows the ops of numbers.
+
+The Lab shows the code of the chain, the result at each origin and the trace. The last panel shows the program as JSON. A Vex program is data: change the JSON, leave the field, and the Lab evaluates the new program.
+
+<Lab client:load />
+
+## The boxes
+
+The Lab reads the same four boxes as the other pages. Drag a box here, and the results of the Lab change.
+
+<Stepper client:visible program="far-corner" title="The boxes and the far corner of each box" />

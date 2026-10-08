@@ -1,5 +1,63 @@
 ---
-title: ir
+title: The IR
+description: A Vex program is JSON data. The kinds of expression, the moves of an address, the axes, and the folds over the tree.
 ---
 
-This page is in progress.
+import ProgramIR from "../../../components/ProgramIR.tsx";
+
+The builder does not evaluate anything. It makes an expression: a tree of plain JSON data. The interpreter evaluates the tree. Other functions read the same tree: `explain` makes a trace, `deps` lists the reads, and `serialize` gives the JSON text.
+
+## A program and its data
+
+<ProgramIR program="nearest" />
+
+The chain `others(...)` binds the current value to a fresh name (`$0`), and the body reads that name with `var`. Thus the base value comes from the origin, and the field names of the body read at each target.
+
+## The kinds of expression
+
+| Kind | Fields | Value |
+|---|---|---|
+| `lit` | `value` | the value |
+| `ref` | `path`, `at` | the field at the path, in the record at the address `at` |
+| `app` | `op`, `args` | the op applied to the values of the arguments. For a method op, the first argument is the receiver. |
+| `let` | `bind`, `body` | the body, with names bound to the values of the bindings |
+| `var` | `name` | the value of a bound name |
+| `rec` | `fields` | a record of the values of the fields |
+| `each` | `axis`, `body` | a list: the body at each target of the axis |
+| `ext` | `kind`, `data` | the value that the extension handler of `kind` gives |
+
+The first three kinds have the same shape as the expressions of the `render` project. Thus a `render` expression is also a Vex expression.
+
+The special forms `if`, `and`, `or` and `ifError` are `app` nodes. The interpreter evaluates their arguments only when it needs them.
+
+## Addresses
+
+An address is a list of moves. The moves apply in order, from the focus.
+
+| Move | Goes to |
+|---|---|
+| `{ t: "key", key }` | the key, or `#REF!` |
+| `{ t: "index", i }` | the key at position `i` of the key order |
+| `{ t: "other" }` | the other key of a space with two keys |
+| `{ t: "offset", d }` | a relative position in an array (one number) or a grid (two numbers) |
+| `{ t: "origin" }` | the origin of the evaluation |
+
+Vex does not simplify an address. For example, `[other, other]` in a space with three keys gives `#REF!`. A simplification to the empty address hides that error, so Vex keeps each move.
+
+## Axes
+
+| Axis | Targets |
+|---|---|
+| `{ t: "all" }` | each key |
+| `{ t: "others" }` | each key except the focus |
+| `{ t: "other" }` | the other key of a pair |
+| `{ t: "neighbors", n }` | the 4 or 8 neighbor cells of a grid |
+| `{ t: "where", axis, test }` | the targets of `axis` where `test` gives `true` |
+
+## Programs are data
+
+<ProgramIR program="overlaps" />
+
+A program can go to a file, a database, a worker or another process. `serialize` gives the JSON text, and `parse` checks the tree when it reads it back. A literal that is a domain value needs `encode` and `decode` in its domain.
+
+`deps(expr)` gives each field read of a program, with its address and the axes around it. A host can use the reads to evaluate a program again only when a field that it reads changes. Refer to [the Lab](../../lab/) to change a program as JSON.

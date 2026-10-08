@@ -1,5 +1,49 @@
 ---
-title: ref
+title: "#REF!: an address outside the space"
+description: An address or an axis points to a key that the space does not have.
+sidebar:
+  label: "#REF!"
+  order: 1
 ---
 
-This page is in progress.
+import { Aside } from "@astrojs/starlight/components";
+import Stepper from "../../../components/Stepper.tsx";
+
+`#REF!` means that an address or an axis points to a key that the space does not have. A spreadsheet gives the same code for a reference to a cell that does not exist.
+
+<Stepper client:visible program="ref" title="A reference to the key Z" />
+
+The program reads `position` at the key Z. The space has the keys A, B, C and D, so the address fails at each origin. The error has the path of the reference node, the origin and the focus.
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `unknown-key` | The move `key(k)` goes to a key that the space does not have. An origin that is not a key also gives this kind. |
+| `not-a-pair` | The move `other` or the axis `other` is in a space that does not have two keys. |
+| `out-of-bounds` | The move `index(i)` or `offset(d)` goes outside the space. |
+| `no-offset` | The move `offset(d)` is in a record space, or `d` has the wrong number of values. |
+| `no-grid` | The axis `neighbors` is in a space that is not a grid. |
+
+## How the types prevent it
+
+The typed builder accepts only the keys of the space. `root.of("Z", "position")`, `.to("Z")` and `.at("Z")` do not compile. `other()` exists only on a chain over a pair. Thus the program above is possible only as IR, for example from JSON.
+
+```ts
+const root = vex(Vec2Domain).over(space.record({ A: boxA, B: boxB, C: boxC }));
+
+root.from("position")._.add(root.of("Z", "size")); // type error: "Z" is not a key
+root.from("position").other();                     // type error: the space is not a pair
+```
+
+<Aside type="caution">
+An offset and an index are numbers, so the types cannot check them. At the edge of an array or a grid, an offset gives `#REF!` at run time.
+</Aside>
+
+## The fix
+
+- Use a key of the space. For a key from outside the program, check it with `space.has(k)` before the evaluation.
+- At the edge of an array or a grid, give a fallback with `ifError`, like `IFERROR` in a spreadsheet.
+- For a pair axis, make a space with two keys.
+
+Refer to [error values](../../learn/errors/) for the other codes.

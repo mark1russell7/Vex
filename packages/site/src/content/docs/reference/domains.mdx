@@ -1,5 +1,16 @@
 ---
-title: domains
+title: The domains
+description: The ops of each domain of @vex/domains, with their parameters, laws and lifting. The build makes the tables from the code.
 ---
 
-This page is in progress.
+import DomainTable from "../../../components/DomainTable.tsx";
+
+A domain tells Vex which values belong to it and which ops they have. The tables below come from the domain objects of `@vex/domains`, at the time of the build. Thus the tables and the code are the same.
+
+- **parameters**: the kinds of the arguments after the receiver. The interpreter checks them, and an argument of the wrong kind gives `#VALUE!`. "not checked" means that the op does not declare its parameters.
+- **laws**: the claims of the op. The law checker of `@vex/testkit` tests each claim with random values. Refer to [the law arena](../../gallery/laws/).
+- **lifts numbers**: a number argument becomes a domain value with `fromScalar`. For example, `add(5)` adds the vector (5, 5).
+- **identity**: the value that `reduce` gives for an empty list.
+- **implementation**: `method` calls the method of the value with the same name. `fn` calls a function of the domain.
+
+<DomainTable />

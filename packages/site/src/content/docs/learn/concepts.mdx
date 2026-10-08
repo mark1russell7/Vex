@@ -1,5 +1,109 @@
 ---
-title: concepts
+title: Concepts
+description: The model of Vex in seven words (space, origin, focus, address, axis, domain and result), each with a live program over the four boxes.
 ---
 
-This page is in progress.
+import { Aside } from "@astrojs/starlight/components";
+import Stepper from "../../../components/Stepper.tsx";
+
+A Vex program is an expression. It evaluates at one key of a space of records, and it gives a value or an error value. Seven words describe the model. This page shows each word with a live program over the four boxes of the site.
+
+<Stepper client:visible program="far-corner" origin="A" title="A field at the focus" />
+
+The program reads `position` and `size` at the focus, and adds them. The result is the far corner of the box. Select another origin, or drag a box, and the program evaluates again.
+
+## The model in one table
+
+| Term | Meaning | In the examples |
+|---|---|---|
+| space | An immutable collection of records with keys | the boxes A, B, C and D |
+| origin | The key where an evaluation starts | the box that you select |
+| focus | The key where a reference without an address reads | the origin, until an address or an axis moves it |
+| address | A list of moves from the focus | `root.of("B", "position")` has the move `key("B")` |
+| axis | A relation between the focus and a list of target keys | `others` relates A to B, C and D |
+| domain | A set of values and the ops on them | `Vec2Domain`, `NumDomain` and `BoolDomain` |
+| result | A value, or an error value with a code | `(7, 6)`, or `#REF!` |
+
+## Space
+
+A space holds the records. It copies its input, and nothing changes it after that. Vex has three kinds of space:
+
+```ts
+import { space } from "@vex/core";
+
+space.record({ A: boxA, B: boxB }); // keys "A" and "B"
+space.array([cell0, cell1, cell2]); // keys "0", "1" and "2"
+space.grid([[a, b], [c, d]]);       // keys "0,0", "0,1", "1,0" and "1,1"
+```
+
+The kind of space sets the valid moves and axes. An offset needs an array or a grid, and the axis `neighbors` needs a grid.
+
+## Origin and focus
+
+The origin is the key where an evaluation starts. The focus is the key where a bare field name reads. At the start, the focus is the origin.
+
+In the first example, `from("position")` reads the position of the box at the focus. `add("size")` reads the size of the same box, because a bare string argument is a field at the focus. A spreadsheet formula reads relative cells in the same way.
+
+## Address
+
+An address is a list of moves from the focus. A reference with an address reads at another key. `root.of("B", "position")` reads the position of B from each origin, like the absolute reference `$B$2` in a spreadsheet.
+
+<Stepper client:visible program="gap-to-b" origin="A" title="An absolute reference to B" />
+
+At the origin B, the result is the size of B: the far corner of B minus the position of B. These are the moves:
+
+| Move | Builder | Goes to | Gives `#REF!` when |
+|---|---|---|---|
+| `key(k)` | `.to(k)`, `root.of(k, field)` | the key `k` | the space has no key `k` |
+| `index(i)` | `.index(i)` | the key at position `i` in the key order | `i` is outside the keys |
+| `other` | `.other()` | the other key of a pair | the space does not have two keys |
+| `offset(d)` | `.offset(...d)` | the focus position plus `d` | the target is outside the space, or the space is a record space |
+| `origin` | `.origin()` | the origin of the evaluation | not applicable |
+
+The moves of an address apply in order. If one move fails, the address fails. Vex does not simplify an address, because a simplification can hide a failure.
+
+<Aside type="note">
+The builder puts each move into the references when it builds the expression. After `.to("C")`, each later field name reads at C. At run time, nothing changes in place: the interpreter resolves each address against the space.
+</Aside>
+
+## Axis
+
+An axis is a relation between the focus and a list of target keys. The body of an axis evaluates once at each target. Inside the body, the focus is the target, but the origin stays the same.
+
+<Stepper client:visible program="nearest" origin="A" title="An axis: the nearest other box" />
+
+At the origin A, the axis `others` has B, C and D as its targets. The body starts with the position of A. In the body, the field name `"position"` reads the position of each target. `min()` reduces the list of distances to one number. Refer to [axes as relations](../axes/) for each axis.
+
+## Domain
+
+A domain tells Vex which values belong to it and which ops they have. A chain finds the domain of its current value, and `._` lists the ops of that domain. After `length()`, the value is a number, so `._` lists the ops of `NumDomain`.
+
+```ts
+import { space, vex } from "@vex/core";
+import { BoolDomain, NumDomain, Vec2Domain } from "@vex/domains";
+
+const root = vex(Vec2Domain, NumDomain, BoolDomain).over(space.record(boxes));
+
+root.from("position")._.add("size");      // a Vec2 op
+root.from("position")._.length()._.gt(3); // a Num op after length()
+```
+
+An op can declare laws, for example `commutative`. `@vex/testkit` checks each law with property tests. Refer to [the domains](../../reference/domains/) for the ops of each domain.
+
+## Result
+
+The interpreter does not throw. Each evaluation gives a value or an error value with a code, like a cell of a spreadsheet. The builder gives three views of one evaluation:
+
+| Method | Gives | Use it for |
+|---|---|---|
+| `at(k)` | an `Optional`: `some(value)` or `none` | the value only |
+| `result(k)` | a `Result`: the value, or the error with its code | the reason for `none` |
+| `explain(k)` | a trace, with one event for each node | each step of the evaluation |
+
+Refer to [error values](../errors/) for the codes.
+
+## Next
+
+- [Vex is a spreadsheet](../spreadsheet/) shows a program as a computed column.
+- [Axes as relations](../axes/) shows each axis and each reduction.
+- [Error values](../errors/) explains the codes and the trace.

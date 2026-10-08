@@ -1,5 +1,37 @@
 ---
-title: lineage
+title: The history
+description: Where Vex came from, why the first versions failed, and what the rebuild changed.
 ---
 
-This page is in progress.
+## A layout engine
+
+Vex came from a layout engine. The engine had boxes with a position and a size, and it asked questions about the relations between the boxes: "where does this box end?", "does this box overlap that box?". The first Vex code took the vector code of that engine and made the questions into a small language.
+
+The name is short for "vector expressions". The idea grew into a general one: a formula that evaluates at each record of a collection, over values of any domain.
+
+## Version 0.9
+
+In August 2025, Vex got a formal specification (version 0.9) with four axes, error-free evaluation and a conformance checklist. The specification was good. But no test checked it.
+
+The first code did not run: its vector domain threw an error at import. The next version made the code run, but it silently removed two features of the specification, because no test protected them. The peer axis was not correct in any version: the program and the axis loop changed the same mutable focus.
+
+## The audits
+
+An audit in July 2026 listed 37 defects. A review in October 2026 added 5 more, and it found the root cause: the specification was prose, not tests. The review is in the repository: [`docs/REVIEW.md`](https://github.com/mark1russell7/Vex/blob/main/docs/REVIEW.md).
+
+## The rebuild
+
+The rebuild of October 2026 kept the ideas and replaced the implementation:
+
+| Before | After |
+|---|---|
+| One mutable focus | Positions are values. The builder resolves moves to addresses on references. |
+| A list of steps with `any` types | A tree of JSON data, and a typed builder |
+| Op metadata on class prototypes, added at import | Domains that own their ops, laws and lifting |
+| Each failure is `none` | Error values with a code, a path and a trace |
+| A prose specification | A specification with requirement IDs, and a test for each ID |
+| No property tests | Totality, purity and law tests with fast-check, and a reference interpreter |
+
+## The family
+
+Vex is one of a family of projects about expressions over structured objects. The projects Graph and render built their own expression languages for reactive layout and rendering. The IR of Vex has the same `lit`, `ref` and `app` shape as the IR of render, so the projects can share programs. Vex adds the axes, the domains with laws and the error values.

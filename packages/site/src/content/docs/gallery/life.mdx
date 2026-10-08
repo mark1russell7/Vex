@@ -1,5 +1,18 @@
 ---
-title: life
+title: The Game of Life
+description: A grid space, the neighbors axis and a rule in Vex. Each generation is the start axis over the grid.
 ---
 
-This page is in progress.
+import Life from "../../../components/Life.tsx";
+
+A grid space has one key for each cell: `"row,column"`. The axis `neighbors(8)` has the eight cells around the focus as targets. The option `where` keeps the live neighbors, and `count()` counts them.
+
+The rule of the Game of Life is one Vex expression. A cell is alive in the next generation if it has 3 live neighbors. A live cell with 2 live neighbors also stays alive. Each generation evaluates the rule at each cell with `all()`.
+
+<Life client:visible />
+
+## Why this works
+
+A Vex program is a function of one position in a space: it reads its own cell and the cells around it. Each cell runs the same program. In mathematics, this is the "extend" operation of a comonad, and cellular automata are the standard example. Refer to [the comonad](../../ideas/comonad/).
+
+Select a cell to change it. Then select "Start" or "One generation".

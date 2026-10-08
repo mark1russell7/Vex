@@ -1,0 +1,33 @@
+---
+title: "#CYCLE!: a cycle of named columns"
+description: A code for sheet(), a later feature. A Vex expression is a tree, so one expression cannot have a cycle.
+sidebar:
+  label: "#CYCLE!"
+  order: 8
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+`#CYCLE!` is the code for a cycle of named columns. A spreadsheet shows a circular reference warning for the same problem.
+
+<Aside type="note" title="No live example">
+`#CYCLE!` is for `sheet()`, a feature of phase P5 of the plan. No program can give this code at this time, so this page has no live example.
+</Aside>
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `cycle` | A named column reads its own value, directly or through other columns. |
+
+## Why one expression has no cycle
+
+A Vex expression is a tree of plain data. A `let` binding evaluates with the names from outside the `let`, so a binding cannot read its own name. Thus one expression cannot read its own value.
+
+`sheet()` will evaluate several named programs over one space. A program can then read the column of another program, like a formula that reads a computed cell. `sheet()` will evaluate the columns in the order of their dependencies, and a cycle will give `#CYCLE!`.
+
+## The fix
+
+When `sheet()` is available, remove one dependency of the cycle.
+
+Refer to [error values](../../learn/errors/) for the other codes.

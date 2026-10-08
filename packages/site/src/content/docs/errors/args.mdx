@@ -1,0 +1,43 @@
+---
+title: "#ARGS: two or more failed arguments"
+description: Vex evaluates each argument. When two or more fail, the error keeps each cause.
+sidebar:
+  label: "#ARGS"
+  order: 7
+---
+
+import Stepper from "../../../components/Stepper.tsx";
+
+`#ARGS` means that two or more arguments of an op failed. The error keeps each failed argument as a cause. Thus one evaluation shows each problem, not only the first one.
+
+<Stepper client:visible program="args" title="Two arguments that both fail" />
+
+The program adds the fields `mass` and `speed`. The boxes have neither field, so both references give `#N/A`. The op `add` gives `#ARGS`, and its `causes` hold the two `#N/A` errors.
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `args` | Two or more arguments of an op failed. Also two or more fields of a `rec` that failed. |
+
+## Applicative evaluation
+
+The interpreter evaluates all arguments of an op before it decides. One failed argument gives its own error, with its own code. Two or more failed arguments give `#ARGS`. This code is not a spreadsheet code: it is the Vex way to keep more than one cause.
+
+The trace shows the same thing. In the example above, the events of `mass` and `speed` both have an error, and the event of `add` has the code `#ARGS`.
+
+The special forms `if`, `and`, `or` and `ifError` are different. They evaluate only the arguments that they need, so they do not give `#ARGS`.
+
+## The fix
+
+- Correct each argument. `error.causes` lists the errors in the order of the arguments.
+- Read each cause with `formatError`:
+
+```ts
+const r = chain.result("A");
+if (!r.ok && r.error.code === "#ARGS") {
+  for (const cause of r.error.causes ?? []) console.log(formatError(cause));
+}
+```
+
+Refer to [error values](../../learn/errors/) for the other codes.

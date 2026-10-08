@@ -3,3 +3,5 @@ src/content/docs/spec/
 src/data/test-report.json
 .report/
 .astro/
+test-results/
+playwright-report/

@@ -15,9 +15,10 @@ function body(md) {
   return md
     .replace(/^# .*\n+/, "")
     .replaceAll("../docs/", `${GITHUB}/docs/`)
+    // Escape the MDX characters inside code spans first, one line at a time, then add the chips.
+    .replace(/`([^`\n]*[{}<>][^`\n]*)`/g, (m) => m.replace(/[{}<>]/g, (c) => `&#${c.charCodeAt(0)};`))
     .replace(/\*\*\[([A-Z0-9.-]+)\]\*\*/g, '<Req id="$1" />')
-    .replace(/^\| (V-\d{3}) \| test \|/gm, '| $1 | <Req id="$1" /> |')
-    .replace(/`([^`]*[{}<>][^`]*)`/g, (m) => m.replace(/[{}<>]/g, (c) => `&#${c.charCodeAt(0)};`));
+    .replace(/^\| (V-\d{3}) \| test \|/gm, '| $1 | <Req id="$1" /> |');
 }
 
 const spec = readFileSync(join(repo, "spec", "README.md"), "utf8");

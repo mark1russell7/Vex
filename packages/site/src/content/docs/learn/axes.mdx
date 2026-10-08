@@ -1,5 +1,112 @@
 ---
-title: axes
+title: Axes as relations
+description: An axis relates the focus to a list of targets. The base value comes from the origin, and the fields come from each target.
 ---
 
-This page is in progress.
+import { Aside } from "@astrojs/starlight/components";
+import AxesExplorer from "../../../components/AxesExplorer.tsx";
+import Stepper from "../../../components/Stepper.tsx";
+
+An axis is a relation between the focus and a list of target keys. The body of the axis evaluates once at each target, and the result is a list. A reduction then makes one value from the list.
+
+Select an origin, an axis and a reduction below. The matrix shows the relation for each origin. The arrows go from the origin to its targets, with the distance at each target.
+
+<AxesExplorer client:visible />
+
+## The axes
+
+| Axis | Builder | Targets | Error |
+|---|---|---|---|
+| `all` | `.each(body)` in a chain, `.all()` at the top | each key of the space | not applicable |
+| `others` | `.others(body)` | each key except the focus | not applicable |
+| `other` | `each(axes.other, body)` in the IR | the other key of a pair | `#REF!` if the space does not have two keys |
+| `neighbors` | `.neighbors(4, body)` or `.neighbors(8, body)` | the cells next to the focus in a grid | `#REF!` outside a grid |
+| `where` | the option `where` of an axis | the targets of the inner axis where the test gives `true` | an error item for a test that fails |
+
+Each axis method of the builder takes a body function and an optional `{ where }` test. The result is a list chain, with the reductions in the [last section](#reduce-the-list).
+
+## Origin and target
+
+Inside an axis, the focus is the target, and the origin stays the same. A value that the program binds outside the axis keeps its value. Thus a base value from the origin and a field of the target meet in one body.
+
+```ts
+root.from("position")                      // the base value, at the origin
+  .others((e) => e._.subtract("position")  // "position" reads at each target
+    ._.length())
+  .min();                                  // the distance to the nearest other box
+```
+
+The body function gets a chain `e` that starts with the base value. The builder binds the base value to a name before the axis. The IR shows it:
+
+```ts
+app("min",
+  let_({ $0: ref("position") },
+    each(axes.others,
+      app("length", app("subtract", v("$0"), ref("position"))))));
+```
+
+The binding `$0` evaluates once, at the origin. The reference `ref("position")` in the body reads at each target. In the trace, the event of `$0` has the focus B, but its value is the position of A.
+
+### Why the old focus failed
+
+The first versions of Vex kept the focus in one shared mutable value. The axis loop moved the focus to each target, and the reference to the origin moved the same focus back. Thus the base value and the target field read the same record, and each distance was 0.
+
+The spec example **EXAMPLE.NEAREST** expects the distance to the nearest other record. The old `peers()` gave 0 for each peer, in each version (defect V-042). Vex 1.0 keeps two positions, the origin and the focus. Both are values, and nothing changes them in place.
+
+## Step through an axis
+
+The program below adds the offsets from the origin to each other box, with the domain op `add`. Move the slider to see the body at each target.
+
+<Stepper client:visible program="offsets" origin="A" title="The sum of the offsets to the others" />
+
+At the origin A, the offsets are `(-4, -3)`, `(-11, -1)` and `(-2, -9)`. Their sum is `(-17, -13)`. Drag a box to change the offsets.
+
+## Filter with where
+
+The option `where` keeps only the targets where a test gives `true`. The test evaluates at each target, with the same base value as the body.
+
+```ts
+root.from("position")
+  .others((e) => e._.subtract("position")._.length(), {
+    where: (e) => e._.subtract("position")._.length()._.lt(8),
+  })
+  .count(); // the number of other boxes nearer than 8
+```
+
+A test that fails, or that does not give a boolean, gives an error item for its target. The "near" axis of the explorer above uses this test, with a radius that you can change.
+
+## Reduce the list
+
+| Reduction | Items | Empty list |
+|---|---|---|
+| `count()` | any | 0 |
+| `sum()` | numbers | 0 |
+| `mean()`, `min()`, `max()` | numbers | `#N/A` |
+| `any()`, `all()`, `none()` | booleans | `false`, `true`, `true` |
+| `first()` | any | `#N/A` |
+| `values()` | any | an empty array |
+| `reduce(op)` | values of a domain with the op | the identity of the op, or `#N/A` |
+
+An item of the wrong kind gives `#VALUE!`. The types check this too: `min()` exists only on a list of numbers.
+
+A reduction is lenient by default: it skips error items. With `{ strict: true }`, the first error item is the result.
+
+```ts
+// Some records have no field "mass".
+root.from("mass").others((e) => e.from("mass")).max();                 // the largest mass of the others
+root.from("mass").others((e) => e.from("mass")).max({ strict: true }); // #N/A if one other has no mass
+```
+
+<Aside type="tip">
+`reduce("add")` folds the list from the left with the op `add` of the domain. For an associative op, any order of reduction gives the same value. The law checker of `@vex/testkit` tests each `associative` claim.
+</Aside>
+
+## The laws of the axes
+
+Three laws of the spec connect the axes. `@vex/testkit` checks each law with random programs and random spaces.
+
+- **AXIS.OTHERS-UNION**: the targets of `others` and the focus are the targets of `all`.
+- **AXIS.OTHER-TWICE**: in a pair, the address `[other, other]` points to the focus.
+- **AXIS.EXTEND**: for an expression that does not read the origin, the item at key `k` of `each(all, e)` equals `e` evaluated at the origin `k`.
+
+Refer to [the Store comonad](../../ideas/comonad/) for the theory behind these laws.

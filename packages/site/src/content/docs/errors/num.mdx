@@ -1,0 +1,36 @@
+---
+title: "#NUM!: a value that is not finite"
+description: An op gave a number that is not finite, or a domain value that fails the valid check of its domain.
+sidebar:
+  label: "#NUM!"
+  order: 5
+---
+
+import Stepper from "../../../components/Stepper.tsx";
+
+`#NUM!` means that an op gave a number that is not finite, or a domain value that is not valid. A spreadsheet gives the same code for a result that is too large.
+
+<Stepper client:visible program="num" title="A division by the vector (0, 0)" />
+
+The program divides a position by 0. The op `divide` lifts the number 0 to the vector `(0, 0)`, and each component of the quotient is infinite. The `valid` check of `Vec2Domain` finds the infinite components, and the result is `#NUM!`.
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `not-finite` | An op gave a number that is not finite: `Infinity`, `-Infinity` or `NaN`. |
+| `invalid-value` | An op gave a domain value that fails the `valid` check of its domain. |
+
+## One policy for each op
+
+Vex checks the result of each op with one policy. A number must be finite. A domain value must pass the `valid` check of the first domain that accepts it. Thus an infinite value stops at the op that made it, and the trace shows that op. It does not go through more ops as a silent `NaN`.
+
+The types cannot prevent `#NUM!`, because it depends on the values at run time.
+
+## The fix
+
+- Do not divide by a value with a zero component. Check the divisor first, with an `if` or a `where` test.
+- Give a fallback with `ifError`. The last lesson of [the tour](../../learn/tour/#8-catch-an-error-value) does this.
+- For a domain of your own, give a `valid` check that finds the values that the domain does not permit.
+
+Refer to [error values](../../learn/errors/) for the other codes.

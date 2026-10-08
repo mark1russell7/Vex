@@ -1,5 +1,59 @@
 ---
-title: comonad
+title: The comonad
+description: The theory under Vex. A space with a focus is a Store comonad, the axes are its operations, and its laws are property tests.
 ---
 
-This page is in progress.
+import Stepper from "../../../components/Stepper.tsx";
+
+A Vex program reads at one position, and it can look at other positions. Functional programming has a name for this shape: the **Store comonad**. The name is useful, because it gives laws, and the laws become tests.
+
+## A space with a focus
+
+A Store is a pair: a function from positions to values, and one position. In Vex, the space gives the records for the keys, and the focus is one key. Store has these operations:
+
+| Store | Vex | Meaning |
+|---|---|---|
+| `extract` | a field name, for example `"size"` | read at the focus |
+| `peek(k)` | `root.of("B", "size")` | read at another key |
+| `seek(k)` | `to("B")` | move the focus |
+| `extend(p)` | `all()` | run the program `p` at each key |
+| `experiment(f)` | `others(body)` | run at the keys that `f` gives for the focus |
+
+`extend` is the "fill down" of a spreadsheet: one formula, evaluated at each row. Cellular automata are the standard example of `extend`. Refer to [the Game of Life](../../gallery/life/).
+
+## The laws
+
+A comonad obeys laws. Vex tests them with random spaces and random programs, through the property tests of `@vex/testkit`:
+
+- **AXIS.EXTEND**: the item at key `k` of `each(all, e)` equals `e` at origin `k`. This is the law "extract after extend gives the program".
+- **AXIS.OTHER-TWICE**: in a pair, `other` twice reads at the focus.
+- **AXIS.OTHERS-UNION**: the targets of `others`, plus the focus, are the targets of `all`.
+
+The old Vex had one mutable focus. A program and the axis loop both changed it, so these laws did not hold. The peer axis gave the wrong values in each version. The [specification](../../spec/) shows the test status of each law.
+
+## Axes are relations
+
+An axis relates an origin to a list of targets. Other languages have the same idea:
+
+| Vex | XPath | jQuery | SQL window |
+|---|---|---|---|
+| the focus | `self` | the element | the current row |
+| `others` | `preceding-sibling` and `following-sibling` | `.siblings()` | `EXCLUDE CURRENT ROW` |
+| `all` | the node set | the selection | the whole frame |
+
+In SQL, the word "peers" means rows with equal sort keys. Thus Vex calls its axis `others`.
+
+## Interpreters as folds
+
+A Vex program is a tree of data. Each function over the tree is a fold: `evaluate` gives a value, `explain` gives a trace, `deps` gives the reads, and `serialize` gives JSON. A new fold does not change the IR. This is one answer to the "expression problem": add new functions over a fixed set of kinds.
+
+<Stepper client:visible program="offsets" title="experiment: the others of the origin" />
+
+## Sources
+
+- Ahman, Chapman and Uustalu, "When is a container a comonad?" (LMCS 2014): [lmcs.episciences.org/894/pdf](https://lmcs.episciences.org/894/pdf)
+- The Store comonad interface: [hackage-content.haskell.org/package/comonad-5.0.10/docs/Control-Comonad-Store-Class.html](https://hackage-content.haskell.org/package/comonad-5.0.10/docs/Control-Comonad-Store-Class.html)
+- Piponi, cellular automata as comonads: [blog.sigfpe.com/2006/12/evaluating-cellular-automata-is.html](http://blog.sigfpe.com/2006/12/evaluating-cellular-automata-is.html)
+- Huet, "The Zipper": [www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf](http://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf)
+- Gibbons and Wu, "Folding domain-specific languages": [www.cs.ox.ac.uk/jeremy.gibbons/publications/embedding.pdf](https://www.cs.ox.ac.uk/jeremy.gibbons/publications/embedding.pdf)
+- XPath 3.1, the focus and the axes: [www.w3.org/TR/xpath-31](https://www.w3.org/TR/xpath-31/)

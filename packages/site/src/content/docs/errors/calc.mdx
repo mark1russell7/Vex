@@ -1,0 +1,39 @@
+---
+title: "#CALC!: an op that threw"
+description: An op threw an exception, or gave no value. The error keeps the thrown value.
+sidebar:
+  label: "#CALC!"
+  order: 6
+---
+
+import Stepper from "../../../components/Stepper.tsx";
+
+`#CALC!` means that an op threw an exception, or gave no value. Vex catches the exception and makes it an error value. Thus the evaluation stays total.
+
+<Stepper client:visible program="calc" title="An op that throws an exception" />
+
+The program applies the free function `parseWeight` to the name of the box. No domain of the program accepts a string, so the interpreter uses the free function. The function throws, and the result is `#CALC!`.
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `threw` | An op, a free function, an extension handler, a `fromScalar` lift or a `valid` check threw an exception. A field read through a getter that throws also gives this kind. |
+| `undefined-result` | An op gave `undefined` or `null`. |
+
+For the kind `threw`, the error keeps the exception in the field `thrown`:
+
+```ts
+const r = chain.result("A");
+if (!r.ok && r.error.kind === "threw") console.error(r.error.thrown);
+```
+
+The types cannot prevent `#CALC!`, because the code of the op decides when it throws.
+
+## The fix
+
+- Find why the op throws. The field `thrown` holds the exception, and the field `op` holds the name of the op.
+- Give an op a value for each input that its domain accepts. Use an error value or a `valid` check, not an exception.
+- Give a fallback with `ifError` for an op that can fail.
+
+Refer to [error values](../../learn/errors/) for the other codes.

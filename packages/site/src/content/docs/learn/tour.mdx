@@ -1,5 +1,78 @@
 ---
-title: tour
+title: A tour of Vex
+description: Eight short lessons. Each lesson adds one call to a chain, and each example runs in the page.
 ---
 
-This page is in progress.
+import { Aside } from "@astrojs/starlight/components";
+import Stepper from "../../../components/Stepper.tsx";
+
+Each lesson adds one call to the chain of the lesson before it. Each example runs the real `@vex/core` in your browser.
+
+The examples read four boxes: A, B, C and D. Each box has a `position`, a `size`, a `weight`, a `color` and a `name`. Drag a box in any example: each example on the page evaluates again with the new position.
+
+The root of each chain comes from these lines:
+
+```ts
+import { space, vex } from "@vex/core";
+import { BoolDomain, ColorDomain, NumDomain, Vec2Domain } from "@vex/domains";
+
+const root = vex(Vec2Domain, NumDomain, BoolDomain, ColorDomain).over(space.record(boxes));
+```
+
+## 1. Read a field
+
+`from("position")` reads the field `position` of the record at the focus. At the start, the focus is the origin: the key where the evaluation starts. Select another origin to read the position of another box.
+
+<Stepper client:visible program="tour-1" />
+
+## 2. Apply an op
+
+`._` lists the ops of the domain of the current value. A bare string is a field at the focus, so `add("size")` adds the size of the same box. The result is the far corner of the box.
+
+<Stepper client:visible program="tour-2" />
+
+<Aside type="tip">
+The types check each argument. `add("name")` does not compile, because `name` is a string and `add` needs a `Vec2`. A string value needs `root.lit("text")`.
+</Aside>
+
+## 3. Read at another key
+
+`root.of("B", "position")` reads a field at the key B, from each origin. It is like an absolute reference in a spreadsheet. At the origin B, the result is the size of B.
+
+<Stepper client:visible program="tour-3" />
+
+## 4. Change the value kind
+
+`length()` gives a number. After it, the chain has no Vec2 ops: the type of the chain follows the value. The Num domain gives the ops of numbers.
+
+<Stepper client:visible program="tour-4" />
+
+## 5. Move the focus
+
+`to("C")` moves the focus for the field names after it. The first `position` reads at the origin, and the second `position` reads at C. The result is the distance from each box to C.
+
+<Stepper client:visible program="tour-5" />
+
+## 6. An axis
+
+`others(body)` evaluates the body at each key except the focus. The body starts with the current value from the origin, and its field names read at each target. The result is a list with one item for each other box.
+
+<Stepper client:visible program="tour-6" />
+
+## 7. Reduce the list
+
+`min()` gives the smallest value of the list. The other reductions are `max`, `sum`, `mean`, `count`, `any`, `all`, `none`, `first`, `values` and `reduce(op)`. By default, a reduction skips error items. With `{ strict: true }`, the first error item is the result.
+
+<Stepper client:visible program="tour-7" />
+
+## 8. Catch an error value
+
+Vex does not throw. A division by the vector (0, 0) gives the error `#NUM!`. `ifError` gives a fallback when the chain gives an error, like `IFERROR` in a spreadsheet. Move the slider to see the error, and then the fallback.
+
+<Stepper client:visible program="tour-8" />
+
+## Next
+
+- [The concepts](../concepts/) explain spaces, addresses, axes and domains.
+- [The Lab](../../lab/) lets you build a chain from chips and change its JSON.
+- [Why none?](../../errors/ref/) explains each error code.

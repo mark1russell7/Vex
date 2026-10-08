@@ -1,5 +1,152 @@
 ---
-title: api
+title: The API
+description: The functions and types of @vex/core, @vex/domains and @vex/testkit.
 ---
 
-This page is in progress.
+import { Aside } from "@astrojs/starlight/components";
+
+Vex has three packages. `@vex/core` has the kernel and the builder, and it has no runtime dependencies. `@vex/domains` has the domains of the site. `@vex/testkit` has the property-test tools.
+
+## The builder
+
+```ts
+import { space, vex } from "@vex/core";
+import { NumDomain, Vec2Domain } from "@vex/domains";
+
+const root = vex(Vec2Domain, NumDomain).over(space.record({ A, B, C }));
+const nearest = root.from("position").others((e) => e._.subtract("position")._.length()).min();
+
+nearest.at("A");      // Optional<number>
+nearest.result("A");  // Result<number>: the value, or the error with its code
+nearest.explain("A"); // Trace: one event for each node
+nearest.all();        // Traversal: the result at each key
+nearest.program;      // Expr: the program as JSON data
+```
+
+`vex(...domains)` gives the entry point for a list of domains. The interpreter finds the op of a value in the first domain that accepts the value. `vex(...).withOptions({ fns, extensions })` adds free functions and extension handlers.
+
+### The root
+
+| Member | What it gives |
+|---|---|
+| `from(field)` | A chain whose value is the field at the focus. The types accept only the fields of the records. |
+| `start(value)` | A chain whose value is `value`. A string is a field reference. |
+| `of(key, field)` | An argument: the field of the record at `key` |
+| `ofPath<T>(key, path)` | An argument: a dotted path at `key`, with the type `T` that you give |
+| `field<T>(path)` | An argument: a dotted path at the focus |
+| `lit(value)` | An argument: a literal. Use it for a string or an array, because a bare string is a field reference. |
+| `rec(fields)` | An argument: a record of argument values |
+| `space` | The space of the root |
+
+### A chain
+
+| Member | What it does |
+|---|---|
+| `._.op(...args)` | Applies an op of the domain of the current value. The types list only the declared ops, with their parameter types. |
+| `from(field)` | Starts a new value: the field at the current address |
+| `to(key)`, `index(i)`, `offset(...d)` | Moves the address of the later field references |
+| `other()` | Moves to the other key of a pair. The types offer it only for a space with two keys. |
+| `origin()` | Moves back to the origin |
+| `others(body, { where })` | The others axis. The body starts with the current value, and its field names read at each target. |
+| `neighbors(n, body, { where })` | The neighbors axis of a grid. `n` is 4 or 8. |
+| `each(body, { where })` | The all axis inside the expression |
+| `with(binds, body)` | Binds names. The body gets a typed argument for each name. |
+| `fork(branches)` | Evaluates each branch with the current value, and gives a record |
+| `ifError(fallback)` | Gives `fallback` when the chain gives an error |
+| `at(key)`, `value(key)`, `result(key)`, `explain(key)`, `all()` | Evaluates the chain |
+| `program` | The expression of the chain |
+
+An axis gives a list chain. A list chain has the reductions `count`, `sum`, `mean`, `min`, `max`, `any`, `all`, `none`, `values`, `first` and `reduce(op)`. Each reduction takes `{ strict: true }`. By default, a reduction skips error items.
+
+### The traversal
+
+`all()` evaluates the chain at each key, and gives a traversal.
+
+| Member | What it gives |
+|---|---|
+| `items` | The key and the result of each item |
+| `get(key)` | The result at one key, as an `Optional` |
+| `values()`, `keys()`, `errors()` | The values, the keys and the errors of the items |
+| `count()`, `sum()`, `mean()`, `min()`, `max()` | A number, as an `Optional` |
+| `any()`, `all()`, `none()` | A boolean, as an `Optional` |
+| `reduce(op)` | The left fold with a domain op |
+| `map(f)` | A new traversal. If `f` throws, the item gets the error `#CALC!`. |
+| `fold(monoid, f)` | The fold of the values with a monoid |
+| `strict()` | A traversal whose reductions give the first error |
+
+## Spaces
+
+```ts
+space.record({ A: a, B: b }); // keys "A" and "B"
+space.array([a, b, c]);       // keys "0", "1" and "2"
+space.grid([[a, b], [c, d]]); // keys "0,0", "0,1", "1,0" and "1,1"
+```
+
+A space copies its input. Nothing changes a space after it is made.
+
+## Domains
+
+```ts
+import { defineDomain, type Domain, type OpTable } from "@vex/core";
+
+export const MoneyDomain: Domain<"Money", Money, OpTable<Money, "add" | "times", "add">> = defineDomain({
+  name: "Money",
+  is: (u: unknown): u is Money => u instanceof Money,
+  fromScalar: (n: number): Money => new Money(n),
+  valid: (m: Money): boolean => Number.isFinite(m.cents),
+  ops: {
+    add: { laws: ["commutative", "associative"], identity: () => Money.zero, liftScalar: true, params: ["domain"] },
+    times: { params: ["number"] },
+  },
+});
+```
+
+| Field | Meaning |
+|---|---|
+| `name` | The name of the domain |
+| `is` | The runtime test for the values. It must not accept a value of another kind. |
+| `ops` | The ops. Each op can declare `laws`, `identity`, `liftScalar`, `params` and `fn`. |
+| `methods` | With `"all"`, each method of a value is an op. The default is `"declared"`. |
+| `fromScalar` | The lift from a number to a value |
+| `valid` | A check of the values that ops give. A value that fails it gives `#NUM!`. |
+| `show` | A short text for a value |
+| `encode`, `decode` | The JSON form of a value, for literals in a serialized program |
+
+An op without `fn` calls the method of the value with the same name. An op with `fn` calls the function: use it for values without methods, for example numbers.
+
+<Aside type="tip">
+Under `isolatedDeclarations`, give a domain an explicit type. `OpTable<D, Names, Lifted>` types the ops, and its third parameter keeps the lifting flags that the builder types read. `FnOp<D, F>` types an op with `fn`.
+</Aside>
+
+## The interpreter and its folds
+
+| Function | What it gives |
+|---|---|
+| `evaluate(expr, { space, origin, domains, fns, extensions, vars })` | A `Result`. It does not throw. |
+| `explain(expr, options)` | A trace: one event for each node, with the focus, the reads and the result |
+| `deps(expr)` | Each field read of the expression, with its address and the axes around it |
+| `serialize(expr, domains)`, `parse(text, domains)` | The JSON text of an expression, and the expression of a JSON text |
+
+## The IR
+
+`lit`, `ref`, `app`, `let_`, `v`, `rec`, `each` and `ext` make expressions. `key`, `index`, `other`, `offset` and `origin` make moves. `axes.all`, `axes.others`, `axes.other`, `axes.neighbors(n)` and `axes.where(axis, test)` make axes. Refer to [the IR](../ir/).
+
+## Results
+
+`Result<T>` is `{ ok: true, value }` or `{ ok: false, error }`. `Optional<T>` is `{ tag: "some", value }` or `{ tag: "none" }`. The helpers are `ok`, `fail`, `some`, `none`, `isSome`, `isNone`, `toOptional`, `getOr`, `mapResult` and `chainResult`. An error has a `code`, a `kind`, a `message` and the `path` of its node. Refer to [the error codes](../../learn/errors/).
+
+## The test kit
+
+| Function | What it does |
+|---|---|
+| `checkLaws(domain, { arb, eq, numRuns })` | Tests each declared law with fast-check, and gives one result for each law |
+| `assertLaws(domain, options)` | Throws an error that lists each failed law |
+| `arbSpace(value)`, `arbExpr(options)`, `arbOrigin(space)` | Arbitraries for random spaces and programs |
+| `referenceEvaluate(expr, options)` | A short reference interpreter, for differential tests |
+| `fromCore`, `fromReference` | Comparable forms of the two outcomes |
+
+A domain author checks the laws of a new domain in one line:
+
+```ts
+expect(checkLaws(MoneyDomain, { arb: fc.integer().map((n) => new Money(n)) }).filter((r) => !r.ok)).toEqual([]);
+```

@@ -1,0 +1,41 @@
+---
+title: "#NAME?: an unknown name"
+description: An op that the domain does not declare, or a variable without a binding.
+sidebar:
+  label: "#NAME?"
+  order: 4
+---
+
+import Stepper from "../../../components/Stepper.tsx";
+
+`#NAME?` means that the program uses a name that Vex does not know: an op or a variable. A spreadsheet gives the same code for a function name with a spelling error.
+
+<Stepper client:visible program="name" title="An op that the domain does not declare" />
+
+The program applies the op `explode` to a position. `Vec2Domain` accepts the position, but it does not declare `explode`. The message is `the domain "Vec2" has no op "explode"`.
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `unknown-op` | The domain of the receiver does not declare the op. An inherited member, for example `toString`, is not an op. Also an op without arguments that is not a free function, and an `ext` kind without a handler. |
+| `unbound` | A `var` reads a name that no `let` binds. |
+
+## How the types prevent it
+
+`._` lists only the ops of the domain of the current value. Thus `._.explode()` does not compile. After an op gives a value that no domain of the chain accepts, the chain has no `._`.
+
+```ts
+root.from("position")._.explode();             // type error: Vec2 has no op "explode"
+root.from("position")._.length()._.halve();    // type error: halve is not an op of Num
+```
+
+The builder makes the names of `with`, `fork` and the axes itself. Thus a program from the builder has no unbound name. The program above is possible only as IR, for example from JSON.
+
+## The fix
+
+- Use an op of the domain. The [domains](../../reference/domains/) page lists the ops of each domain.
+- To add an op, declare it in the `ops` of the domain. Or set `methods: "all"`, and each method of a value is an op.
+- For a free function, give it in `fns`: `vex(...domains).withOptions({ fns: { myOp } })`.
+
+Refer to [error values](../../learn/errors/) for the other codes.

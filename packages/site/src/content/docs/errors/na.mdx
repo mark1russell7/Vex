@@ -1,0 +1,36 @@
+---
+title: "#N/A: no value is available"
+description: A field is missing, or a reduction has no values to work with.
+sidebar:
+  label: "#N/A"
+  order: 2
+---
+
+import Stepper from "../../../components/Stepper.tsx";
+
+`#N/A` means that a value is not available. A field is missing, or a reduction has no values to work with. A spreadsheet gives the same code when a lookup finds no match.
+
+<Stepper client:visible program="na" title="A field that the record does not have" />
+
+The program adds the field `mass` to the position. The boxes have no field `mass`, so the reference fails at each origin. The op `add` then gives the same error, because one failed argument gives its own error.
+
+## Kinds
+
+| Kind | Cause |
+|---|---|
+| `missing-field` | The record has no value at the path, or the value is `null`. The segments `__proto__`, `constructor` and `prototype` are not fields, and they also give this kind. |
+| `empty` | `min`, `max`, `mean` or `first` of an empty list. Also `reduce` of an empty list, with an op that has no identity. |
+
+## Why the types do not prevent it
+
+`from(p)` accepts only the fields of the record type. But a space can hold records of different shapes. The builder merges their types, so a field of one record can be missing in another record. `root.field(path)` reads any dotted path, with a type that you give.
+
+An axis with a `where` test can also give an empty list at some origins. Thus `#N/A` is a value that a program must expect.
+
+## The fix
+
+- Read a field that each record has.
+- Give a fallback with `ifError`, for example `root.from("mass").ifError(1)`.
+- For an empty list, use `count()` or `sum()`, which give 0. Or give `reduce` an op with an `identity`.
+
+Refer to [error values](../../learn/errors/) for the other codes.

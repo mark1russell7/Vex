@@ -58,7 +58,7 @@ Vex does not simplify an address. For example, `[other, other]` in a space with 
 
 <ProgramIR program="overlaps" />
 
-A program can go to a file, a database, a worker or another process. `serialize` gives the JSON text, and `parse` checks the tree when it reads it back. A literal that is a domain value needs `encode` and `decode` in its domain.
+A program can go to a file, a database, a worker or another process. The JSON Schema of the IR is at [`ir.schema.json`](../../ir.schema.json), and a test keeps it equal to the checks of `parse`. A language model can write a program from the schema, and [`llms.txt`](../../llms.txt) tells it where to start. `serialize` gives the JSON text, and `parse` checks the tree when it reads it back. A literal that is a domain value needs `encode` and `decode` in its domain.
 
 `compile(expr, options)` changes the tree into a tree of functions, once. The program then evaluates at each origin of each space without a new walk of the tree. `evaluate` uses `compile` too, so the two cannot give different results.
 

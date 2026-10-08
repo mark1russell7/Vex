@@ -109,3 +109,12 @@ test("the grid pilot gives the rectangles of the reference", async ({ page }) =>
   await expect(pilot.getByTestId("grid-agrees")).toHaveText("equal to the reference");
   await expect(pilot.locator("svg rect[rx]")).toHaveCount(7);
 });
+
+test("the site serves the JSON Schema of the IR and llms.txt", async ({ page }) => {
+  const schema = await page.request.get("./ir.schema.json");
+  expect(schema.ok()).toBe(true);
+  expect(((await schema.json()) as { title?: string }).title).toBe("Vex expression");
+  const llms = await page.request.get("./llms.txt");
+  expect(llms.ok()).toBe(true);
+  expect(await llms.text()).toContain("ir.schema.json");
+});

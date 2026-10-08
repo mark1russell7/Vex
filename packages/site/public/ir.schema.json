@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mark1russell7.github.io/Vex/ir.schema.json",
+  "title": "Vex expression",
+  "description": "A Vex program as JSON data. The function isExpr of @vex/core accepts the same values. Refer to https://mark1russell7.github.io/Vex/reference/ir/.",
+  "$ref": "#/$defs/expr",
+  "$defs": {
+    "expr": {
+      "oneOf": [
+        { "$ref": "#/$defs/lit" },
+        { "$ref": "#/$defs/ref" },
+        { "$ref": "#/$defs/app" },
+        { "$ref": "#/$defs/let" },
+        { "$ref": "#/$defs/var" },
+        { "$ref": "#/$defs/rec" },
+        { "$ref": "#/$defs/each" },
+        { "$ref": "#/$defs/ext" }
+      ]
+    },
+    "lit": {
+      "description": "A literal value.",
+      "type": "object",
+      "required": ["tag", "value"],
+      "properties": { "tag": { "const": "lit" }, "value": true }
+    },
+    "ref": {
+      "description": "The field at a dotted path, in the record at the address 'at' from the focus.",
+      "type": "object",
+      "required": ["tag", "path"],
+      "properties": {
+        "tag": { "const": "ref" },
+        "path": { "type": "array", "items": { "type": "string" } },
+        "at": { "type": "array", "items": { "$ref": "#/$defs/move" } }
+      }
+    },
+    "app": {
+      "description": "An op applied to the values of the arguments. For a method op, the first argument is the receiver.",
+      "type": "object",
+      "required": ["tag", "op", "args"],
+      "properties": {
+        "tag": { "const": "app" },
+        "op": { "type": "string" },
+        "args": { "type": "array", "items": { "$ref": "#/$defs/expr" } }
+      }
+    },
+    "let": {
+      "description": "The body, with names bound to the values of the bindings.",
+      "type": "object",
+      "required": ["tag", "bind", "body"],
+      "properties": {
+        "tag": { "const": "let" },
+        "bind": { "type": "object", "additionalProperties": { "$ref": "#/$defs/expr" } },
+        "body": { "$ref": "#/$defs/expr" }
+      }
+    },
+    "var": {
+      "description": "The value of a bound name.",
+      "type": "object",
+      "required": ["tag", "name"],
+      "properties": { "tag": { "const": "var" }, "name": { "type": "string" } }
+    },
+    "rec": {
+      "description": "A record of the values of the fields.",
+      "type": "object",
+      "required": ["tag", "fields"],
+      "properties": {
+        "tag": { "const": "rec" },
+        "fields": { "type": "object", "additionalProperties": { "$ref": "#/$defs/expr" } }
+      }
+    },
+    "each": {
+      "description": "A list: the body at each target of the axis.",
+      "type": "object",
+      "required": ["tag", "axis", "body"],
+      "properties": {
+        "tag": { "const": "each" },
+        "axis": { "$ref": "#/$defs/axis" },
+        "body": { "$ref": "#/$defs/expr" }
+      }
+    },
+    "ext": {
+      "description": "An extension node. The handler of 'kind' gives its value. A sheet cell reference has the kind 'vex.cell'.",
+      "type": "object",
+      "required": ["tag", "kind", "data"],
+      "properties": { "tag": { "const": "ext" }, "kind": { "type": "string" }, "data": true }
+    },
+    "move": {
+      "description": "One move of an address. The moves apply in order, from the focus.",
+      "oneOf": [
+        { "type": "object", "required": ["t", "key"], "properties": { "t": { "const": "key" }, "key": { "type": "string" } } },
+        { "type": "object", "required": ["t", "i"], "properties": { "t": { "const": "index" }, "i": { "type": "integer" } } },
+        { "type": "object", "required": ["t"], "properties": { "t": { "const": "other" } } },
+        { "type": "object", "required": ["t", "d"], "properties": { "t": { "const": "offset" }, "d": { "type": "array", "items": { "type": "integer" } } } },
+        { "type": "object", "required": ["t"], "properties": { "t": { "const": "origin" } } }
+      ]
+    },
+    "axis": {
+      "description": "The relation between a position and the targets that a body reads.",
+      "oneOf": [
+        { "type": "object", "required": ["t"], "properties": { "t": { "const": "all" } } },
+        { "type": "object", "required": ["t"], "properties": { "t": { "const": "others" } } },
+        { "type": "object", "required": ["t"], "properties": { "t": { "const": "other" } } },
+        { "type": "object", "required": ["t", "n"], "properties": { "t": { "const": "neighbors" }, "n": { "enum": [4, 8] } } },
+        {
+          "type": "object",
+          "required": ["t", "axis", "test"],
+          "properties": { "t": { "const": "where" }, "axis": { "$ref": "#/$defs/axis" }, "test": { "$ref": "#/$defs/expr" } }
+        }
+      ]
+    }
+  }
+}

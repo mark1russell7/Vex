@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deps } from "./deps.ts";
-import { evaluate, explain, type EvalOptions } from "./evaluate.ts";
+import { compile, evaluate, explain, type EvalOptions } from "./evaluate.ts";
 import { app, axes, each, ext, key, let_, lit, other, ref, rec, v, type Expr } from "./ir.ts";
 import { parse, serialize } from "./json.ts";
 import { isVexList } from "./list.ts";
@@ -313,6 +313,22 @@ describe("folds: explain, deps, JSON", () => {
     const text = value(serialize(lit(new Pt(1, 2)), [PtDomain]));
     expect(error(parse(text)).message).toContain('no domain "Pt"');
     expect(value(parse(value(serialize(lit({ a: [1, null, "s"] })))))).toEqual(lit({ a: [1, null, "s"] }));
+  });
+});
+
+describe("compiled programs (EVAL.COMPILE)", () => {
+  it("EVAL.COMPILE: one program runs at each origin of two spaces, with the results and traces of evaluate", () => {
+    const e = let_({ base: ref("position") }, app("min", each(axes.others, app("length", app("subtract", v("base"), ref("position"))))));
+    const program = compile(e, { domains: [PtDomain] });
+    expect(program.expr).toBe(e);
+    for (const s of [space.record({ A, B, C, D }), space.record({ A, C })]) {
+      for (const k of s.keys) {
+        expect(program.run({ space: s, origin: k })).toEqual(evaluate(e, at(s, k)));
+        expect(program.explain({ space: s, origin: k })).toEqual(explain(e, at(s, k)));
+      }
+    }
+    expect(error(program.run({ space: space.record({ A }), origin: "Z" })).code).toBe("#REF!");
+    expect(value(compile(lit(1)).run({ space: space.record({ A }), origin: "A" }))).toBe(1);
   });
 });
 

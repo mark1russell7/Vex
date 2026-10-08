@@ -1,4 +1,4 @@
-import { app, cell, each, evaluate, explain, lit, parse, ref, serialize, SheetRun, space, vex, type Expr, type Space } from "@vex/core";
+import { app, cell, compile, each, evaluate, explain, lit, parse, ref, serialize, SheetRun, space, vex, type Expr, type Space } from "@vex/core";
 import { BoolDomain, NumDomain, Vec2, Vec2Domain } from "@vex/domains";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -42,6 +42,17 @@ describe("properties of the interpreter", () => {
         const core = fromCore(run(e, s, k));
         const reference = fromReference(referenceEvaluate(e, { space: s, origin: k, domains: DOMAINS }));
         expect(core).toEqual(reference);
+      }),
+    );
+  });
+
+  it("P10 EVAL.COMPILE: one compiled program runs on many spaces, and each run agrees with the reference interpreter", () => {
+    fc.assert(
+      fc.property(arbExpr(OPTS), fc.array(arbSpace(vec).chain((s) => fc.tuple(fc.constant(s), arbOrigin(s))), { minLength: 1, maxLength: 4 }), (e, runs) => {
+        const compiled = compile(e, { domains: DOMAINS });
+        for (const [s, k] of runs) {
+          expect(fromCore(compiled.run({ space: s, origin: k }))).toEqual(fromReference(referenceEvaluate(e, { space: s, origin: k, domains: DOMAINS })));
+        }
       }),
     );
   });

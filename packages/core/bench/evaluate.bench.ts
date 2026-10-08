@@ -5,7 +5,7 @@
  */
 import { test } from "vitest";
 import { vex } from "../src/builder.ts";
-import { evaluate } from "../src/evaluate.ts";
+import { compile, evaluate } from "../src/evaluate.ts";
 import { parse, serialize } from "../src/json.ts";
 import { space } from "../src/space.ts";
 import { Pt, PtDomain } from "../src/test-support.ts";
@@ -17,11 +17,15 @@ const boxes = Object.fromEntries(
 const keys = Object.keys(boxes);
 const root = vex(PtDomain).over(space.record(boxes));
 const nearest = root.from("position").others((e) => e._.subtract("position")._.length()).min();
+const compiled = compile(nearest.program, { domains: [PtDomain] });
 
 test(`the nearest other box, at each of ${N} keys`, async ({ bench }) => {
   await bench.compare(
     bench("vex: all() of the chain", () => {
       nearest.all();
+    }),
+    bench("vex: one compiled program, run at each key", () => {
+      for (const k of keys) compiled.run({ space: root.space, origin: k });
     }),
     bench("vex: evaluate of the IR", () => {
       for (const k of keys) evaluate(nearest.program, { space: root.space, origin: k, domains: [PtDomain] });

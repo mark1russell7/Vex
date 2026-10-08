@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
   "baseBranch": "main",
   "access": "public",
-  "ignore": ["@vex/site", "@vex/cli", "@vex/mutation"],
+  "ignore": ["@vex/site", "@vex/cli", "@vex/mutation", "@vex/pilots"],
   "fixed": [["@vex/core", "@vex/domains", "@vex/testkit"]],
   "linked": [],
   "format": "auto",

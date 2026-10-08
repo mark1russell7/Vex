@@ -59,6 +59,7 @@ An expression is plain JSON data. It has one of these kinds.
 - **[EVAL.PURE]** An evaluation does not change any state. Two evaluations of the same expression at the same key give the same result.
 - **[EVAL.ORIGIN]** An origin that is not a key of the space gives `#REF!`.
 - **[EVAL.LOCATION]** An error value has the path of the node that made it, and the origin and the focus of the evaluation at that node. An extension handler can give an error without an origin. Then the interpreter adds the path, the origin and the focus of the extension node.
+- **[EVAL.COMPILE]** `compile(e, options)` gives a program. Its `run` and `explain` give the same results and the same traces as `evaluate` and `explain`. One program evaluates at each origin of each space, and one evaluation does not change a later evaluation.
 - **[EVAL.REFERENCE]** The interpreter of `@vex/core` and the reference interpreter of `@vex/testkit` give the same value or the same error code.
 
 ### 5.1 References

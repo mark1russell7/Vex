@@ -60,4 +60,6 @@ Vex does not simplify an address. For example, `[other, other]` in a space with 
 
 A program can go to a file, a database, a worker or another process. `serialize` gives the JSON text, and `parse` checks the tree when it reads it back. A literal that is a domain value needs `encode` and `decode` in its domain.
 
+`compile(expr, options)` changes the tree into a tree of functions, once. The program then evaluates at each origin of each space without a new walk of the tree. `evaluate` uses `compile` too, so the two cannot give different results.
+
 `deps(expr)` gives each field read of a program, with its address and the axes around it. A host can use the reads to evaluate a program again only when a field that it reads changes. Refer to [the Lab](../../lab/) to change a program as JSON.

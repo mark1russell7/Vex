@@ -52,95 +52,173 @@ export const SPECIAL_FORMS: ReadonlySet<string> = new Set<SpecialForm>(["if", "a
 
 const isSpecialForm = (op: string): op is SpecialForm => SPECIAL_FORMS.has(op);
 
-/** This function evaluates an expression at the origin of a space. It does not throw. */
-export function evaluate(expr: Expr, opts: EvalOptions): Result<unknown> {
-  return new Interpreter(opts).run(expr);
+/** The options that a compiled program keeps: the domains, the free functions and the extension handlers. */
+export type CompileOptions = Pick<EvalOptions, "domains" | "fns" | "extensions">;
+
+/** The options of one run of a compiled program. */
+export type RunOptions = Pick<EvalOptions, "space" | "origin" | "vars" | "trace">;
+
+/**
+ * A compiled program: the expression as a tree of functions. A program evaluates many times at different origins,
+ * and over different spaces, without a new walk of the expression.
+ */
+export interface Program {
+  /** The expression of the program. */
+  readonly expr: Expr;
+  /** This method evaluates the program at an origin. It does not throw. */
+  run(opts: RunOptions): Result<unknown>;
+  /** This method evaluates the program at an origin, with a trace of each node. */
+  explain(opts: Omit<RunOptions, "trace">): Trace;
 }
 
-/** This function evaluates an expression and records a trace of each node. */
-export function explain(expr: Expr, opts: Omit<EvalOptions, "trace">): Trace {
-  const sink: TraceSink = { events: [] };
-  const result = new Interpreter({ ...opts, trace: sink }).run(expr);
-  return { events: sink.events, result };
-}
-
-class Interpreter {
-  readonly #opts: EvalOptions;
-  readonly #domains: readonly AnyDomain[];
-
-  constructor(opts: EvalOptions) {
-    this.#opts = opts;
-    this.#domains = opts.domains ?? [];
-  }
-
-  run(expr: Expr): Result<unknown> {
-    const { space, origin } = this.#opts;
-    if (!space.has(origin)) {
-      return fail(vexError("unknown-key", `the space has no key "${origin}"`, { origin, focus: origin }));
-    }
-    const env = new Map<string, Result<unknown>>(Object.entries(this.#opts.vars ?? {}).map(([k, val]) => [k, ok(val)]));
+/**
+ * This function compiles an expression. The result gives the same results and the same traces as `evaluate`,
+ * because `evaluate` uses it too.
+ */
+export function compile(expr: Expr, opts: CompileOptions = {}): Program {
+  const root = new Compiler(opts).node(expr, []);
+  const run = (r: RunOptions): Result<unknown> => {
+    const { space, origin } = r;
+    if (!space.has(origin)) return fail(vexError("unknown-key", `the space has no key "${origin}"`, { origin, focus: origin }));
+    const env = new Map<string, Result<unknown>>(Object.entries(r.vars ?? {}).map(([k, val]) => [k, ok(val)]));
     try {
-      return this.#ev(expr, { pos: { origin, focus: origin }, env }, []);
+      return root({ pos: { origin, focus: origin }, env }, { space, trace: r.trace });
     } catch (thrown) {
       // A defect in an extension handler or in a test of the interpreter itself. Totality still holds.
       return fail(vexError("threw", "the evaluation threw an exception", { origin, focus: origin, thrown }));
     }
+  };
+  return {
+    expr,
+    run,
+    explain: (r) => {
+      const sink: TraceSink = { events: [] };
+      const result = run({ ...r, trace: sink });
+      return { events: sink.events, result };
+    },
+  };
+}
+
+// The cache of compiled programs: one entry for each expression object, for the last options.
+const CACHE = new WeakMap<Expr, { readonly domains: unknown; readonly fns: unknown; readonly extensions: unknown; readonly program: Program }>();
+
+function compiled(expr: Expr, opts: CompileOptions): Program {
+  const hit = CACHE.get(expr);
+  if (hit !== undefined && hit.domains === opts.domains && hit.fns === opts.fns && hit.extensions === opts.extensions) return hit.program;
+  const program = compile(expr, opts);
+  CACHE.set(expr, { domains: opts.domains, fns: opts.fns, extensions: opts.extensions, program });
+  return program;
+}
+
+/** This function evaluates an expression at the origin of a space. It does not throw. */
+export function evaluate(expr: Expr, opts: EvalOptions): Result<unknown> {
+  return compiled(expr, opts).run(opts);
+}
+
+/** This function evaluates an expression and records a trace of each node. */
+export function explain(expr: Expr, opts: Omit<EvalOptions, "trace">): Trace {
+  return compiled(expr, opts).explain(opts);
+}
+
+/** The state of one run that the nodes read: the space and the trace sink. */
+interface Ctx {
+  readonly space: Space;
+  readonly trace: TraceSink | undefined;
+}
+
+/** A compiled node: it evaluates in a frame of a run. */
+type Node = (f: Frame, c: Ctx) => Result<unknown>;
+
+/** The static facts of a node for its trace events. */
+interface Info {
+  readonly path: readonly number[];
+  readonly tag: Expr["tag"];
+  readonly label: string;
+}
+
+class Compiler {
+  readonly #domains: readonly AnyDomain[];
+  readonly #fns: Readonly<Record<string, FreeFn>> | undefined;
+  readonly #extensions: Readonly<Record<string, ExtHandler>> | undefined;
+
+  constructor(opts: CompileOptions) {
+    this.#domains = opts.domains ?? [];
+    this.#fns = opts.fns;
+    this.#extensions = opts.extensions;
   }
 
   #err(kind: ErrorKind, message: string, f: Frame, path: readonly number[], extra: { op?: string; causes?: readonly VexError[]; thrown?: unknown } = {}): Result<never> {
     return fail(vexError(kind, message, { path, origin: f.pos.origin, focus: f.pos.focus, ...extra }));
   }
 
-  #emit(e: Expr, f: Frame, path: readonly number[], result: Result<unknown>, reads?: readonly Read[]): Result<unknown> {
-    const sink = this.#opts.trace;
-    if (sink !== undefined) {
+  #emit(c: Ctx, info: Info, f: Frame, result: Result<unknown>, reads?: readonly Read[]): Result<unknown> {
+    if (c.trace !== undefined) {
       const event: TraceEvent = {
-        path,
-        tag: e.tag,
-        label: labelOf(e),
+        path: info.path,
+        tag: info.tag,
+        label: info.label,
         origin: f.pos.origin,
         focus: f.pos.focus,
         ...(reads === undefined ? {} : { reads }),
         result,
       };
-      sink.events.push(event);
+      c.trace.events.push(event);
     }
     return result;
   }
 
-  #ev(e: Expr, f: Frame, path: readonly number[]): Result<unknown> {
+  /** This method compiles the expression `e` at the position `path` of the tree. */
+  node(e: Expr, path: readonly number[]): Node {
+    const info: Info = { path, tag: e.tag, label: labelOf(e) };
     switch (e.tag) {
-      case "lit":
-        return this.#emit(e, f, path, ok(e.value));
+      case "lit": {
+        const r = ok(e.value);
+        return (f, c) => this.#emit(c, info, f, r);
+      }
       case "ref":
-        return this.#ref(e, f, path);
+        return this.#ref(e, info);
       case "var": {
-        const bound = f.env.get(e.name);
-        const r = bound ?? this.#err("unbound", `the name "${e.name}" has no binding`, f, path);
-        return this.#emit(e, f, path, r);
+        const name = e.name;
+        return (f, c) => this.#emit(c, info, f, f.env.get(name) ?? this.#err("unbound", `the name "${name}" has no binding`, f, path));
       }
       case "let": {
-        const env = new Map(f.env);
-        const binds = Object.entries(e.bind);
-        binds.forEach(([name, be], i) => env.set(name, this.#ev(be, f, [...path, i])));
-        const r = this.#ev(e.body, { pos: f.pos, env }, [...path, binds.length]);
-        return this.#emit(e, f, path, r);
+        const binds = Object.entries(e.bind).map(([name, be], i): readonly [string, Node] => [name, this.node(be, [...path, i])]);
+        const body = this.node(e.body, [...path, binds.length]);
+        return (f, c) => {
+          const env = new Map(f.env);
+          for (const [name, n] of binds) env.set(name, n(f, c));
+          return this.#emit(c, info, f, body({ pos: f.pos, env }, c));
+        };
       }
-      case "rec":
-        return this.#emit(e, f, path, this.#rec(e, f, path));
+      case "rec": {
+        const names = Object.keys(e.fields);
+        const fields = this.#nodes(Object.values(e.fields), path);
+        return (f, c) => {
+          const values = this.#all(fields, f, c, path, "fields");
+          if (!values.ok) return this.#emit(c, info, f, values);
+          const out: Record<string, unknown> = {};
+          names.forEach((n, i) => {
+            out[n] = values.value[i];
+          });
+          return this.#emit(c, info, f, ok(Object.freeze(out)));
+        };
+      }
       case "app":
-        return this.#emit(e, f, path, this.#app(e, f, path));
+        return isSpecialForm(e.op) ? this.#special(e.op, this.#nodes(e.args, path), info) : this.#app(e.op, this.#nodes(e.args, path), info);
       case "each":
-        return this.#emit(e, f, path, this.#each(e, f, path));
+        return this.#each(e, info);
       case "ext": {
-        const handler = this.#opts.extensions?.[e.kind];
-        const r =
-          handler === undefined
-            ? this.#err("unknown-op", `no handler for the extension kind "${e.kind}"`, f, path)
-            : this.#locate(this.#guard(() => handler(e.data, { space: this.#opts.space, position: f.pos, path }), f, path, e.kind), f, path);
-        return this.#emit(e, f, path, r);
+        const handler = Object.hasOwn(this.#extensions ?? {}, e.kind) ? this.#extensions?.[e.kind] : undefined;
+        const { kind, data } = e;
+        if (handler === undefined) return (f, c) => this.#emit(c, info, f, this.#err("unknown-op", `no handler for the extension kind "${kind}"`, f, path));
+        return (f, c) =>
+          this.#emit(c, info, f, this.#locate(this.#guard(() => handler(data, { space: c.space, position: f.pos, path }), f, path, kind), f, path));
       }
     }
+  }
+
+  #nodes(es: readonly Expr[], path: readonly number[]): readonly Node[] {
+    return es.map((x, i) => this.node(x, [...path, i]));
   }
 
   /** This method gives an error of a handler the path, the origin and the focus of its node, if it has no origin. */
@@ -157,128 +235,160 @@ class Interpreter {
     }
   }
 
-  #ref(e: ExprOf<"ref">, f: Frame, path: readonly number[]): Result<unknown> {
-    const where = resolveAddr(this.#opts.space, f.pos, e.at);
-    if (!where.ok) return this.#emit(e, f, path, fail({ ...where.error, path }));
-    const key = where.value;
-    let value: unknown = this.#opts.space.get(key);
-    const label = e.path.join(".");
-    const missing = (at: string): Result<unknown> =>
-      this.#err("missing-field", `the record at "${key}" has no value at "${at}"`, f, path);
-    if (value === undefined || value === null) {
-      return this.#emit(e, f, path, missing(label === "" ? "(record)" : label), [{ key, path: e.path, ok: false }]);
+  #ref(e: ExprOf<"ref">, info: Info): Node {
+    const { path } = info;
+    const segs = e.path;
+    const at = e.at ?? [];
+    const label = segs.join(".");
+    const steps = segs.map((seg, i) => ({ seg, where: segs.slice(0, i + 1).join("."), valid: isFieldName(seg) }));
+    return (f, c) => {
+      let key = f.pos.focus;
+      if (at.length > 0) {
+        const where = resolveAddr(c.space, f.pos, at);
+        if (!where.ok) return this.#emit(c, info, f, fail({ ...where.error, path }));
+        key = where.value;
+      }
+      const failed = (r: Result<unknown>): Result<unknown> => this.#emit(c, info, f, r, [{ key, path: segs, ok: false }]);
+      const missing = (where: string): Result<unknown> => failed(this.#err("missing-field", `the record at "${key}" has no value at "${where}"`, f, path));
+      let value: unknown = c.space.get(key);
+      if (value === undefined || value === null) return missing(label === "" ? "(record)" : label);
+      for (const { seg, where, valid } of steps) {
+        if ((typeof value !== "object" && typeof value !== "function") || !valid) return missing(where);
+        try {
+          value = Reflect.get(value, seg);
+        } catch (thrown) {
+          return failed(this.#err("threw", `reading "${where}" at "${key}" threw an exception`, f, path, { thrown }));
+        }
+        if (value === undefined || value === null) return missing(where);
+      }
+      return this.#emit(c, info, f, ok(value), [{ key, path: segs, ok: true }]);
+    };
+  }
+
+  /** This method evaluates nodes applicatively. One failure stays as it is. Two or more give `#ARGS`. */
+  #all(nodes: readonly Node[], f: Frame, c: Ctx, path: readonly number[], what: string): Result<readonly unknown[]> {
+    const values: unknown[] = [];
+    let first: VexError | undefined;
+    let errors: VexError[] | undefined;
+    for (const n of nodes) {
+      const r = n(f, c);
+      if (r.ok) values.push(r.value);
+      else if (first === undefined) first = r.error;
+      else (errors ??= [first]).push(r.error);
     }
-    for (const [i, seg] of e.path.entries()) {
-      const at = e.path.slice(0, i + 1).join(".");
-      if ((typeof value !== "object" && typeof value !== "function") || !isFieldName(seg)) {
-        return this.#emit(e, f, path, missing(at), [{ key, path: e.path, ok: false }]);
-      }
-      try {
-        value = Reflect.get(value, seg);
-      } catch (thrown) {
-        return this.#emit(e, f, path, this.#err("threw", `reading "${at}" at "${key}" threw an exception`, f, path, { thrown }), [
-          { key, path: e.path, ok: false },
-        ]);
-      }
-      if (value === undefined || value === null) {
-        return this.#emit(e, f, path, missing(at), [{ key, path: e.path, ok: false }]);
-      }
-    }
-    return this.#emit(e, f, path, ok(value), [{ key, path: e.path, ok: true }]);
+    if (first === undefined) return ok(values);
+    return errors === undefined ? fail(first) : this.#err("args", `${errors.length} ${what} failed`, f, path, { causes: errors });
   }
 
-  /** This method evaluates expressions applicatively. One failure stays as it is. Two or more give `#ARGS`. */
-  #all(exprs: readonly Expr[], f: Frame, path: readonly number[], what: string): Result<readonly unknown[]> {
-    const results = exprs.map((x, i) => this.#ev(x, f, [...path, i]));
-    const errors = results.flatMap((r) => (r.ok ? [] : [r.error]));
-    const [first] = errors;
-    if (first === undefined) return ok(results.map((r) => (r.ok ? r.value : undefined)));
-    return errors.length === 1 ? fail(first) : this.#err("args", `${errors.length} ${what} failed`, f, path, { causes: errors });
+  #each(e: ExprOf<"each">, info: Info): Node {
+    const { path } = info;
+    const targets = this.#targets(e.axis, path, { next: 1 });
+    const body = this.node(e.body, [...path, 0]);
+    return (f, c) => {
+      const ts = targets(f, c);
+      if (!ts.ok) return this.#emit(c, info, f, ts);
+      const items: ListItem[] = ts.value.map(({ key, test }) => {
+        if (test !== undefined && !test.ok) return { key, result: test };
+        return { key, result: body({ pos: { origin: f.pos.origin, focus: key }, env: f.env }, c) };
+      });
+      return this.#emit(c, info, f, ok(vexList(items)));
+    };
   }
 
-  #rec(e: ExprOf<"rec">, f: Frame, path: readonly number[]): Result<unknown> {
-    const names = Object.keys(e.fields);
-    const values = this.#all(
-      names.map((n) => e.fields[n] as Expr),
-      f,
-      path,
-      "fields",
-    );
-    if (!values.ok) return values;
-    const out: Record<string, unknown> = {};
-    names.forEach((n, i) => {
-      out[n] = values.value[i];
-    });
-    return ok(Object.freeze(out));
-  }
-
-  #each(e: ExprOf<"each">, f: Frame, path: readonly number[]): Result<unknown> {
-    const targets = this.#targets(e.axis, f, path, { next: 1 });
-    if (!targets.ok) return targets;
-    const items: ListItem[] = targets.value.map(({ key, test }) => {
-      if (test !== undefined && !test.ok) return { key, result: test };
-      const result = this.#ev(e.body, { pos: { origin: f.pos.origin, focus: key }, env: f.env }, [...path, 0]);
-      return { key, result };
-    });
-    return ok(vexList(items));
-  }
-
-  /** This method gives the targets of an axis. For `where`, a failed test keeps the target with its error. */
-  #targets(
-    a: Axis,
-    f: Frame,
-    path: readonly number[],
-    counter: { next: number },
-  ): Result<readonly { readonly key: string; readonly test?: Result<unknown> }[]> {
+  /** This method compiles the targets of an axis. For `where`, a failed test keeps the target with its error. */
+  #targets(a: Axis, path: readonly number[], counter: { next: number }): (f: Frame, c: Ctx) => Result<readonly { readonly key: string; readonly test?: Result<unknown> }[]> {
     if (a.t !== "where") {
-      const keys = axisTargets(this.#opts.space, f.pos, a);
-      return keys.ok ? ok(keys.value.map((key) => ({ key }))) : fail({ ...keys.error, path });
+      return (f, c) => {
+        const keys = axisTargets(c.space, f.pos, a);
+        return keys.ok ? ok(keys.value.map((key) => ({ key }))) : fail({ ...keys.error, path });
+      };
     }
-    const inner = this.#targets(a.axis, f, path, counter);
-    if (!inner.ok) return inner;
-    const testIndex = counter.next++;
-    const out: { key: string; test?: Result<unknown> }[] = [];
-    for (const t of inner.value) {
-      if (t.test !== undefined && !t.test.ok) {
-        out.push(t);
-        continue;
+    const inner = this.#targets(a.axis, path, counter);
+    const testPath = [...path, counter.next++];
+    const test = this.node(a.test, testPath);
+    return (f, c) => {
+      const ts = inner(f, c);
+      if (!ts.ok) return ts;
+      const out: { key: string; test?: Result<unknown> }[] = [];
+      for (const t of ts.value) {
+        if (t.test !== undefined && !t.test.ok) {
+          out.push(t);
+          continue;
+        }
+        const at: Frame = { pos: { origin: f.pos.origin, focus: t.key }, env: f.env };
+        const r = test(at, c);
+        if (!r.ok) out.push({ key: t.key, test: r });
+        else if (r.value === true) out.push({ key: t.key });
+        else if (r.value !== false) {
+          out.push({ key: t.key, test: this.#err("kind-mismatch", `the test of "where" gave a ${typeof r.value}, not a boolean`, at, testPath) });
+        }
       }
-      const at: Frame = { pos: { origin: f.pos.origin, focus: t.key }, env: f.env };
-      const r = this.#ev(a.test, at, [...path, testIndex]);
-      if (!r.ok) out.push({ key: t.key, test: r });
-      else if (r.value === true) out.push({ key: t.key });
-      else if (r.value !== false) {
-        out.push({ key: t.key, test: this.#err("kind-mismatch", `the test of "where" gave a ${typeof r.value}, not a boolean`, at, [...path, testIndex]) });
-      }
-    }
-    return ok(out);
+      return ok(out);
+    };
   }
 
-  #app(e: ExprOf<"app">, f: Frame, path: readonly number[]): Result<unknown> {
-    if (isSpecialForm(e.op)) return this.#special(e, e.op, f, path);
-    const args = this.#all(e.args, f, path, "arguments");
-    if (!args.ok) return args;
-    const values = args.value;
-    const self = values[0];
-
-    if (isVexList(self) && isListOp(e.op)) return this.#listOp(e.op, self, values.slice(1), f, path);
-
-    let accepted: AnyDomain | undefined;
-    if (values.length > 0) {
-      for (const d of this.#domains) {
-        if (!safeIs(d, self)) continue;
-        accepted ??= d;
-        const op = resolveOp(d, self, e.op);
-        if (op !== undefined) return this.#call(op, e.op, values.slice(1), f, path);
+  #app(op: string, args: readonly Node[], info: Info): Node {
+    const { path } = info;
+    const listOp = isListOp(op) ? op : undefined;
+    const fn = this.#fns !== undefined && Object.hasOwn(this.#fns, op) ? this.#fns[op] : undefined;
+    return (f, c) => {
+      const all = this.#all(args, f, c, path, "arguments");
+      if (!all.ok) return this.#emit(c, info, f, all);
+      const values = all.value;
+      const self = values[0];
+      if (listOp !== undefined && isVexList(self)) return this.#emit(c, info, f, this.#listOp(listOp, self, values.slice(1), f, path));
+      let accepted: AnyDomain | undefined;
+      if (values.length > 0) {
+        for (const d of this.#domains) {
+          if (!safeIs(d, self)) continue;
+          accepted ??= d;
+          const resolved = resolveOp(d, self, op);
+          if (resolved !== undefined) return this.#emit(c, info, f, this.#call(resolved, op, values.slice(1), f, path));
+        }
       }
+      if (fn !== undefined) return this.#emit(c, info, f, this.#checkResult(this.#invoke(() => fn(...values), op, f, path), f, path, op));
+      if (accepted !== undefined) return this.#emit(c, info, f, this.#err("unknown-op", `the domain "${accepted.name}" has no op "${op}"`, f, path, { op }));
+      if (values.length === 0) return this.#emit(c, info, f, this.#err("unknown-op", `there is no function "${op}"`, f, path, { op }));
+      return this.#emit(c, info, f, this.#err("not-instance", `no domain accepts the receiver of "${op}" (${describeType(self)})`, f, path, { op }));
+    };
+  }
+
+  #special(op: SpecialForm, args: readonly Node[], info: Info): Node {
+    const { path } = info;
+    const arg = (i: number, f: Frame, c: Ctx): Result<unknown> => {
+      const n = args[i];
+      return n === undefined ? this.#err("bad-expression", `"${op}" needs argument ${i + 1}`, f, path, { op }) : n(f, c);
+    };
+    const bool = (i: number, f: Frame, c: Ctx): Result<boolean> => {
+      const r = arg(i, f, c);
+      if (!r.ok) return r;
+      return typeof r.value === "boolean" ? ok(r.value) : this.#err("kind-mismatch", `argument ${i + 1} of "${op}" is a ${describeType(r.value)}, not a boolean`, f, path, { op });
+    };
+    switch (op) {
+      case "if":
+        return (f, c) => {
+          const cond = bool(0, f, c);
+          return this.#emit(c, info, f, cond.ok ? arg(cond.value ? 1 : 2, f, c) : cond);
+        };
+      case "and":
+      case "or": {
+        const stop = op === "or";
+        return (f, c) => {
+          if (args.length === 0) return this.#emit(c, info, f, this.#err("bad-expression", `"${op}" needs at least 1 argument`, f, path, { op }));
+          for (let i = 0; i < args.length; i++) {
+            const b = bool(i, f, c);
+            if (!b.ok) return this.#emit(c, info, f, b);
+            if (b.value === stop) return this.#emit(c, info, f, ok(b.value));
+          }
+          return this.#emit(c, info, f, ok(!stop));
+        };
+      }
+      case "ifError":
+        return (f, c) => {
+          const first = arg(0, f, c);
+          return this.#emit(c, info, f, first.ok ? first : arg(1, f, c));
+        };
     }
-    const fn = this.#opts.fns?.[e.op];
-    if (fn !== undefined && Object.hasOwn(this.#opts.fns ?? {}, e.op)) {
-      return this.#checkResult(this.#invoke(() => fn(...values), e.op, f, path), f, path, e.op);
-    }
-    if (accepted !== undefined) return this.#err("unknown-op", `the domain "${accepted.name}" has no op "${e.op}"`, f, path, { op: e.op });
-    if (values.length === 0) return this.#err("unknown-op", `there is no function "${e.op}"`, f, path, { op: e.op });
-    return this.#err("not-instance", `no domain accepts the receiver of "${e.op}" (${describeType(self)})`, f, path, { op: e.op });
   }
 
   #call(op: ResolvedOp, name: string, rest: readonly unknown[], f: Frame, path: readonly number[]): Result<unknown> {
@@ -329,39 +439,6 @@ class Interpreter {
       if (!valid) return this.#err("invalid-value", `"${op}" gave a value that is not a valid ${d.name}`, f, path, extra);
     }
     return r;
-  }
-
-  #special(e: ExprOf<"app">, op: SpecialForm, f: Frame, path: readonly number[]): Result<unknown> {
-    const arg = (i: number): Result<unknown> => {
-      const x = e.args[i];
-      return x === undefined ? this.#err("bad-expression", `"${op}" needs argument ${i + 1}`, f, path, { op: op }) : this.#ev(x, f, [...path, i]);
-    };
-    const bool = (i: number): Result<boolean> => {
-      const r = arg(i);
-      if (!r.ok) return r;
-      return typeof r.value === "boolean" ? ok(r.value) : this.#err("kind-mismatch", `argument ${i + 1} of "${op}" is a ${describeType(r.value)}, not a boolean`, f, path, { op: op });
-    };
-    switch (op) {
-      case "if": {
-        const c = bool(0);
-        if (!c.ok) return c;
-        return arg(c.value ? 1 : 2);
-      }
-      case "and":
-      case "or": {
-        if (e.args.length === 0) return this.#err("bad-expression", `"${op}" needs at least 1 argument`, f, path, { op: op });
-        for (let i = 0; i < e.args.length; i++) {
-          const b = bool(i);
-          if (!b.ok) return b;
-          if (op === "and" ? !b.value : b.value) return ok(b.value);
-        }
-        return ok(op === "and");
-      }
-      case "ifError": {
-        const first = arg(0);
-        return first.ok ? first : arg(1);
-      }
-    }
   }
 
   #listOp(op: ListOp, list: VexList, rest: readonly unknown[], f: Frame, path: readonly number[]): Result<unknown> {

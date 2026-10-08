@@ -1,33 +1,48 @@
 ---
-title: "#CYCLE!: a cycle of named columns"
-description: A code for sheet(), a later feature. A Vex expression is a tree, so one expression cannot have a cycle.
+title: "#CYCLE!: a cycle of cell references"
+description: A cell of a sheet reads itself, directly or through other cells. Each cell on the cycle gives this code.
 sidebar:
   label: "#CYCLE!"
   order: 8
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import CycleLab from "../../../components/CycleLab.tsx";
 
-`#CYCLE!` is the code for a cycle of named columns. A spreadsheet shows a circular reference warning for the same problem.
+`#CYCLE!` means that a cell of a sheet reads itself, directly or through other cells. A spreadsheet shows a circular reference warning for the same problem.
 
-<Aside type="note" title="No live example">
-`#CYCLE!` is for `sheet()`, a feature of phase P5 of the plan. No program can give this code at this time, so this page has no live example.
-</Aside>
+<CycleLab client:visible />
+
+In the start state, the column `a` reads `b`, and `b` reads `a`. Both cells give `#CYCLE!`. The column `c` reads `a`, but `a` does not read `c`, so `c` is not on the cycle. Its `ifError` changes the error to 0.
 
 ## Kinds
 
 | Kind | Cause |
 |---|---|
-| `cycle` | A named column reads its own value, directly or through other columns. |
+| `cycle` | The cell is on a cycle of cell references: a column reads its own value at the same key, directly or through other cells. A cycle can go across keys, for example a column that reads itself at `other`. |
+
+## Why ifError does not hide it
+
+Each cell on a cycle gives `#CYCLE!`, also when its formula has `ifError`:
+
+```ts doctest
+const loop = root
+  .sheet()
+  .column("a", (r) => r.start(r.cell<number>("b")).ifError(0)._.add(1))
+  .column("b", (r) => r.start(r.cell<number>("a")).ifError(0)._.add(1));
+
+loop.result("A", "a"); // => { ok: false, error: { code: "#CYCLE!", ... } }
+loop.result("B", "b"); // => { ok: false, error: { code: "#CYCLE!", ... } }
+```
+
+If `ifError` could hide a cycle, the first cell that the sheet evaluates gets the error, and the other cell gets a value. The results then depend on the order of the evaluations. Vex finds each cycle with the algorithm of Tarjan for strongly connected components, so the result is the same in each order.
 
 ## Why one expression has no cycle
 
-A Vex expression is a tree of plain data. A `let` binding evaluates with the names from outside the `let`, so a binding cannot read its own name. Thus one expression cannot read its own value.
-
-`sheet()` will evaluate several named programs over one space. A program can then read the column of another program, like a formula that reads a computed cell. `sheet()` will evaluate the columns in the order of their dependencies, and a cycle will give `#CYCLE!`.
+A Vex expression is a tree of plain data. A `let` binding evaluates with the names from outside the `let`, so a binding cannot read its own name. Only the cell references of a sheet can make a cycle.
 
 ## The fix
 
-When `sheet()` is available, remove one dependency of the cycle.
+- Remove one reference of the cycle. The page [sheets and cycles](../../learn/sheets/) shows each read.
+- For a recurrence, read a different key: a running total reads the row above with `offset(-1)`, not its own row.
 
 Refer to [error values](../../learn/errors/) for the other codes.

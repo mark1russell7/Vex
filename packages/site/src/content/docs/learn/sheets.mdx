@@ -1,0 +1,70 @@
+---
+title: Sheets and cycles
+description: Named columns of formulas that read each other, like the columns of a spreadsheet. A cycle of reads gives #CYCLE!.
+---
+
+import CycleLab from "../../../components/CycleLab.tsx";
+
+A chain is one formula. A **sheet** is a set of named columns, and the formula of a column can read the other columns. This is the most familiar part of a spreadsheet: the column `total` reads the column `price` and the column `count`.
+
+## Columns that read columns
+
+`root.sheet()` starts a sheet. `column(name, formula)` adds a column, and gives a new sheet. The formula gets a root with one more method: `cell(column, at)` reads a column at the focus, at a key, or at an address.
+
+```ts doctest
+const s = root
+  .sheet()
+  .column("corner", (r) => r.from("position")._.add("size"))
+  .column("gapToB", (r) => r.start(r.of("B", "position"))._.subtract(r.cell("corner")));
+
+s.at("A", "corner"); // => some(new Vec2(7, 6))
+s.at("A", "gapToB"); // => some(new Vec2(-1, -1))
+s.at("A", "gapToB"); // : Optional<Vec2>
+```
+
+The types of the earlier columns go into the later formulas. Thus `r.cell("corner")` has the type `Vec2`, and `._` lists the ops of `Vec2Domain`.
+
+A cell reference is a node of the IR: `ext("vex.cell", { column, at })`. Thus a column is JSON data, and `explain` shows each cell read in its trace.
+
+## A column that reads itself
+
+A column can read itself at another key. In an array space, the move `offset(-1)` goes to the row above. This is a running total, like `=B2+C1` filled down a column:
+
+```ts doctest
+const rows = vex(NumDomain).over(space.array([{ v: 4 }, { v: 1 }, { v: 3 }]));
+const total = rows
+  .sheet()
+  .column("total", (r) => r.from("v")._.add(r.start(r.cell<number>("total", [offset(-1)])).ifError(0)));
+
+total.table().map((row) => row.cells.total); // => [ok(4), ok(5), ok(8)]
+```
+
+The first row has no row above, so the read gives `#REF!`, and `ifError(0)` changes it to 0. A column that reads itself or a later column gives the type with `cell<T>`.
+
+A sheet evaluates the earlier keys first. Thus a running total over thousands of rows reads finished cells, and does not go deep into the call stack.
+
+## Cycles
+
+A cell that reads itself, directly or through other cells, has no value. Each cell on such a cycle gives `#CYCLE!`:
+
+```ts doctest
+const loop = root
+  .sheet()
+  .column("a", (r) => r.start(r.cell<number>("b"))._.add(1))
+  .column("b", (r) => r.start(r.cell<number>("a")).ifError(0));
+
+loop.result("A", "a"); // => { ok: false, error: { code: "#CYCLE!", ... } }
+loop.result("A", "b"); // => { ok: false, error: { code: "#CYCLE!", ... } }
+```
+
+The column `b` has `ifError(0)`, but it gives `#CYCLE!` too. If `ifError` hides a cycle, the result of a cell depends on the cell that the sheet evaluates first. Vex finds the cycles with the algorithm of Tarjan for strongly connected components. Each cell of a component with two or more cells gives `#CYCLE!`, in each order of evaluation. A property test checks this on random sheets.
+
+A cell that only reads a cycle is not on the cycle. It gets `#CYCLE!` as a value, and `ifError` can change it.
+
+## Try it
+
+Each column adds its own number and the cells that it reads. Select the reads in the grid. A red column is on a cycle. Select "ifError" for a column to catch the errors of its reads, and see which cells change.
+
+<CycleLab client:visible />
+
+In the start state, `a` and `b` read each other, so both give `#CYCLE!`. The column `c` reads `a` with `ifError`, and it is not on the cycle, so it gives `3 + 0`. Select "c reads c" to put `c` on a cycle of its own.

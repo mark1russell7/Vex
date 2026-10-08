@@ -82,3 +82,30 @@ test("the living spec shows a chip for each requirement", async ({ page }) => {
   await expect(page.locator('[id="req-EVAL.TOTAL"]')).toBeVisible();
   expect(await page.locator(".vx-chip[id^='req-']").count()).toBeGreaterThan(50);
 });
+
+test("the cycle lab marks each cell on a cycle", async ({ page }) => {
+  await page.goto("./learn/sheets/");
+  const lab = page.getByRole("region", { name: "The cycle lab" });
+  await hydrated(lab);
+  await expect(lab.getByTestId("cell-a")).toHaveText("#CYCLE!");
+  await expect(lab.getByTestId("cell-b")).toHaveText("#CYCLE!");
+  await expect(lab.getByTestId("cell-c")).toHaveText("3");
+  // Without the read from b to a, the cycle is gone: a = 1 + b = 3, and c = 3 + a = 6.
+  await lab.getByRole("checkbox", { name: "b reads a" }).uncheck();
+  await expect(lab.getByTestId("cell-a")).toHaveText("3");
+  await expect(lab.getByTestId("cell-c")).toHaveText("6");
+  // A read of itself is a cycle, also with ifError.
+  await lab.getByRole("checkbox", { name: "c reads c" }).check();
+  await expect(lab.getByTestId("cell-c")).toHaveText("#CYCLE!");
+});
+
+test("the grid pilot gives the rectangles of the reference", async ({ page }) => {
+  await page.goto("./gallery/grid/");
+  const pilot = page.getByRole("region", { name: "The grid pilot" });
+  await hydrated(pilot);
+  await expect(pilot.getByTestId("grid-agrees")).toHaveText("equal to the reference");
+  await pilot.getByRole("slider", { name: "columns" }).fill("3");
+  await pilot.getByRole("button", { name: "New sizes" }).click();
+  await expect(pilot.getByTestId("grid-agrees")).toHaveText("equal to the reference");
+  await expect(pilot.locator("svg rect[rx]")).toHaveCount(7);
+});

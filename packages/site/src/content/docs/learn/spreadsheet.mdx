@@ -94,4 +94,4 @@ A reduction over a column skips error items by default. `strict()` on a traversa
 - **Axes.** A formula reads a fixed set of cells. An axis reads a relation: each other record, the neighbors of a cell, or the targets that pass a test.
 - **Types.** The typed builder accepts only the fields, keys and ops that exist. Thus many errors cannot occur at run time.
 
-Phase P5 of the plan adds `sheet()`. It will evaluate named columns in the order of their dependencies, and a cycle will give `#CYCLE!`.
+A sheet adds named columns that read each other, like the computed columns of a spreadsheet. A cycle of reads gives `#CYCLE!`. Refer to [sheets and cycles](../sheets/).

@@ -1,0 +1,60 @@
+---
+title: The grid pilot
+description: A layout strategy of a real application, written again as one Vex program. A property test shows that the two give the same rectangles.
+---
+
+import GridPilot from "../../../components/GridPilot.tsx";
+
+Vex came from a layout engine, and its plan names a first real user: the layout strategies of the Graph application. The pilot takes one strategy, the grid, and writes it again as one Vex program.
+
+## The grid layout
+
+The grid layout puts the items in rows, from left to right:
+
+- The cell is the size of the largest item. An item without a size counts as 0, and the cell is at least 1 by 1.
+- The configuration can set the number of columns. Without it, the number of columns is the number of cells that fit in the width of the bounds. The limit is the square root of the number of items, rounded up.
+- Each item starts at the top-left corner of its cell. An item without a size gets the size of the cell.
+
+## One formula for each item
+
+The Vex program evaluates at each item. Three values come from all the items: the largest width, the largest height and the number of items. The axis `each` reads them. The slot of the item comes from an extension, like `ROW()` in a spreadsheet.
+
+```ts
+const cellW = root.start(0).each((t) => t.from("width").ifError(0)).max()._.max(1);
+const cellH = root.start(0).each((t) => t.from("height").ifError(0)).max()._.max(1);
+const count = root.start(0).each((t) => t).count();
+const cols = root.start(bounds.width + gap)._.divide(cellW._.add(gap))._.floor()._.max(1)
+  ._.min(count._.sqrt()._.ceil())._.max(1);
+const i = root.start(root.ext<number>("slot"));
+
+root.start(root.rec({
+  left: i._.mod(cols)._.multiply(cellW._.add(gap)),
+  top: i._.divide(cols)._.floor()._.multiply(cellH._.add(gap)),
+  width: root.from("width").ifError(cellW),
+  height: root.from("height").ifError(cellH),
+}));
+```
+
+The test of Graph for this strategy has four items of 100 by 100, in bounds of 400 by 400, with a gap of 10:
+
+```ts doctest
+import { gridVex } from "@vex/pilots";
+
+const items = [{ width: 100, height: 100 }, { width: 100, height: 100 }, { width: 100, height: 100 }, { width: 100, height: 100 }];
+gridVex(items, { width: 400, height: 400 }, { gap: 10 }).map((r) => [r.left, r.top]); // => [[0, 0], [110, 0], [0, 110], [110, 110]]
+```
+
+## Try it
+
+Change the sliders. The chip compares the rectangles of the Vex program with the rectangles of a plain TypeScript implementation of the same rules.
+
+<GridPilot client:visible />
+
+## What the pilot shows
+
+- **It fits.** The grid layout is three reductions and one formula for each item. The axes and the domain of numbers express it without new parts. The only addition is the extension `slot`.
+- **It is equal.** A property test gives random items, bounds and configurations to both implementations, and compares the rectangles.
+- **It is slower.** The program evaluates the three reductions again at each item, so its cost grows with the square of the number of items. A sheet with one column for each reduction, or the `compile` step of the plan, removes this cost.
+- **Not each layout fits.** The packed layout of Graph places each item after the items before it. That is an ordered fold with a state, not a formula for each item. Vex does not try to express it.
+
+Graph is a private repository. Thus the pilot compares the program with a new implementation of the same rules, not with a copy of the Graph code.

@@ -307,6 +307,9 @@ importers:
       '@vex/domains':
         specifier: workspace:*
         version: link:../domains
+      '@vex/pilots':
+        specifier: workspace:*
+        version: link:../pilots
       '@vex/testkit':
         specifier: workspace:*
         version: link:../testkit

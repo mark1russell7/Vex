@@ -37,6 +37,8 @@ nearest.at("A");      // => some(5)
 | `field<T>(path)` | An argument: a dotted path at the focus |
 | `lit(value)` | An argument: a literal. Use it for a string or an array, because a bare string is a field reference. |
 | `rec(fields)` | An argument: a record of argument values |
+| `ext<T>(kind, data)` | An argument: the node `ext(kind, data)`. The extension handler of `kind` gives its value. |
+| `sheet()` | A sheet over the space: named columns of formulas. Refer to the next section. |
 | `space` | The space of the root |
 
 ### A chain
@@ -74,6 +76,20 @@ An axis gives a list chain. A list chain has the reductions `count`, `sum`, `mea
 | `map(f)` | A new traversal. If `f` throws, the item gets the error `#CALC!`. |
 | `fold(monoid, f)` | The fold of the values with a monoid |
 | `strict()` | A traversal whose reductions give the first error |
+
+### Sheets
+
+`root.sheet()` gives an empty sheet. A sheet is immutable: each call of `column` gives a new sheet.
+
+| Member | What it does |
+|---|---|
+| `column(name, formula)` | Adds a column. The formula gets a root with `cell`, and gives a chain. |
+| `r.cell(column, at)` | In a formula: an argument whose value is the column at the focus, at the key `at`, or at the address `at` |
+| `result(k, column)`, `at(k, column)`, `explain(k, column)` | Evaluates one cell |
+| `table()` | Evaluates each cell in key order, and gives one row for each key |
+| `columns` | The program of each column, as JSON data |
+
+A cell on a cycle of cell references gives `#CYCLE!`. Refer to [sheets and cycles](../../learn/sheets/).
 
 ## Spaces
 

@@ -122,6 +122,6 @@ jobs:
       - uses: lycheeverse/lychee-action@v2
         with:
           args: >-
-            --no-progress --scheme https --scheme http --max-retries 2 --accept "200..=299,403,429"
+            --no-progress --scheme https --scheme http --max-retries 2 --timeout 30 --accept "200..=299,403,429"
             README.md "spec/**/*.md" "docs/*.md" "packages/*/README.md" "packages/site/src/content/**/*.mdx"
           fail: true

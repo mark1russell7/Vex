@@ -899,7 +899,7 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 - The Store comonad interface: <https://hackage-content.haskell.org/package/comonad-5.0.10/docs/Control-Comonad-Store-Class.html>
 - Piponi, cellular automata as comonads: <http://blog.sigfpe.com/2006/12/evaluating-cellular-automata-is.html>
 - Orchard, Bolingbroke, Mycroft, Ypnos (a comonadic grid language): <https://www.cs.kent.ac.uk/people/staff/dao7/publ/ypnos-damp10.pdf>
-- Huet, "The Zipper", JFP 1997: <http://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf>
+- Huet, "The Zipper", JFP 1997: <https://doi.org/10.1017/S0956796897002864>
 - Pickering, Gibbons, Wu, profunctor optics: <https://arxiv.org/abs/1703.10857>
 - Gibbons, Wu, "Folding domain-specific languages": <https://www.cs.ox.ac.uk/jeremy.gibbons/publications/embedding.pdf>
 - Oliveira, Cook, object algebras: <https://www.cs.utexas.edu/~wcook/Drafts/2012/ecoop2012.pdf>

@@ -28,8 +28,20 @@ const argToken = <T>(expr: Expr): Arg<T> => ({ kind: "vex.arg", expr });
 
 // ---------------------------------------------------------------- type helpers
 
+/** The keys of any member of a union of record types. */
+type AllKeys<O> = O extends unknown ? keyof O : never;
+
+/** The type of field `P` in the members of `O` that have it. */
+type FieldType<O, P extends PropertyKey> = O extends unknown ? (P extends keyof O ? O[P] : never) : never;
+
+/**
+ * The merged view of a union of record types: each field of any member, with the union of its types. A record
+ * without the field gives `#N/A` at run time.
+ */
+export type Merge<O> = { readonly [P in AllKeys<O>]: FieldType<O, P> };
+
 /** The keys of `O` whose values have the type `T`. */
-export type KeysOfType<O, T> = { [P in keyof O]-?: O[P] extends T ? P : never }[keyof O] & string;
+export type KeysOfType<O, T> = { [P in keyof O]-?: [NonNullable<O[P]>] extends [never] ? never : NonNullable<O[P]> extends T ? P : never }[keyof O] & string;
 
 /** The method names of `D`. */
 export type MethodKeys<D> = { [P in keyof D]-?: D[P] extends (...args: never[]) => unknown ? P : never }[keyof D] & string;
@@ -220,14 +232,18 @@ export interface ListOpts {
 export interface Root<Ctx extends ChainContext> {
   /** This method starts a chain with a field of the record at the focus. */
   from<P extends keyof Ctx["record"] & string>(field: P): ChainOf<Ctx, NonNullable<Ctx["record"][P]>>;
-  /** This method starts a chain with a value. */
-  start<const T>(value: T): ChainOf<Ctx, T>;
+  /** This method starts a chain with a value. A string is a field reference, as in an argument. */
+  start<const T>(value: T): ChainOf<Ctx, ArgValue<Ctx, T>>;
   /** This method makes an absolute reference: the field of the record at key `k`. */
   of<P extends keyof Ctx["record"] & string>(k: Ctx["keys"], field: P): Arg<NonNullable<Ctx["record"][P]>>;
   /** This method makes a reference to a dotted path at the focus, with the type that the caller gives. */
   field<T>(path: string): Arg<T>;
   /** This method makes a literal argument. Use it for a string or an array: a bare string is a field reference. */
   lit<const T>(value: T): Arg<T>;
+  /** This method makes an absolute reference to a dotted path at key `k`, with the type that the caller gives. */
+  ofPath<T>(k: Ctx["keys"], path: string): Arg<T>;
+  /** This method makes a record argument from field arguments. */
+  rec<const F extends Readonly<Record<string, unknown>>>(fields: F): Arg<{ readonly [N in keyof F]: ArgValue<Ctx, F[N]> }>;
   /** The space of the root. */
   readonly space: Space<Ctx["keys"], Ctx["record"]>;
 }
@@ -243,7 +259,7 @@ export interface VexOptions {
 /** The entry point for a list of domains. */
 export interface VexEntry<Dms extends readonly AnyDomain[]> {
   /** This method gives the root of the builder for a space. */
-  over<K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: O }>;
+  over<K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O> }>;
   /** The domains. */
   readonly domains: Dms;
 }
@@ -477,6 +493,14 @@ class RootImpl {
   lit(value: unknown): Arg<unknown> {
     return argToken(lit(value));
   }
+  ofPath(k: string, path: string): Arg<unknown> {
+    return argToken(ref(toPath(path), [keyMove(k)]));
+  }
+  rec(fields: Readonly<Record<string, unknown>>): Arg<unknown> {
+    const out: Record<string, Expr> = {};
+    for (const [n, a] of Object.entries(fields)) out[n] = toExpr(a, []);
+    return argToken(rec(out));
+  }
 }
 
 /**
@@ -486,8 +510,8 @@ class RootImpl {
 export function vex<const Dms extends readonly AnyDomain[]>(...domains: Dms): VexEntry<Dms> & { withOptions(options: VexOptions): VexEntry<Dms> } {
   const make = (options: VexOptions): VexEntry<Dms> => ({
     domains,
-    over: <K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: O }> =>
-      new RootImpl({ space: s, domains, options }) as unknown as Root<{ readonly domains: Dms; readonly keys: K; readonly record: O }>,
+    over: <K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O> }> =>
+      new RootImpl({ space: s, domains, options }) as unknown as Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O> }>,
   });
   return { ...make({}), withOptions: make };
 }

@@ -15,5 +15,9 @@
     "@types/node": "^26.6.4",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@vex/core": "workspace:*",
+    "fast-check": "^4.10.2"
   }
 }

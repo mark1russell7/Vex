@@ -1,2 +1,10 @@
-/** The version of the package. */
-export const version: string = "0.1.0";
+/**
+ * Domains for Vex: 2D vectors, named-component vectors, colors, angles, numbers and booleans, and two
+ * example domains (function wrappers and `Maybe`).
+ */
+export * from "./vec2.ts";
+export * from "./ndvector.ts";
+export * from "./scalars.ts";
+export * from "./color.ts";
+export * from "./angle.ts";
+export * from "./wrappers.ts";

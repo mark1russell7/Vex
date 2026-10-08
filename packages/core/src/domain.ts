@@ -26,6 +26,20 @@ export interface OpSpec<D = never> {
   readonly params?: readonly ParamKind[];
 }
 
+/** The type of an op that lifts number arguments. Use it to type the ops of a domain under `isolatedDeclarations`. */
+export type LiftedOp<D> = OpSpec<D> & { readonly liftScalar: true };
+
+/** The type of an op with an implementation function `F`. */
+export type FnOp<D, F extends (self: D, ...args: never[]) => unknown> = OpSpec<D> & { readonly fn: F };
+
+/**
+ * The type of an op table: each name in `Names` is an op, and each name in `Lifted` lifts number arguments.
+ * Use it to type the ops of a domain under `isolatedDeclarations`.
+ */
+export type OpTable<D, Names extends string, Lifted extends string = never> = {
+  readonly [N in Names]: N extends Lifted ? LiftedOp<D> : OpSpec<D>;
+};
+
 /** The description of a domain, as a caller gives it to `defineDomain`. */
 export interface DomainSpec<Name extends string, D, Ops extends Readonly<Record<string, OpSpec<D>>>> {
   /** The name of the domain. */

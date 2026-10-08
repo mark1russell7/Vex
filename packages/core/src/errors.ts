@@ -1,0 +1,100 @@
+/**
+ * The error codes of Vex. The names come from the spreadsheet error values, because a Vex program is a
+ * spreadsheet formula over records.
+ */
+export type ErrorCode = "#REF!" | "#N/A" | "#VALUE!" | "#NAME?" | "#NUM!" | "#CALC!" | "#ARGS" | "#CYCLE!";
+
+/** The cause of an error, in more detail than the code. */
+export type ErrorKind =
+  | "unknown-key"
+  | "not-a-pair"
+  | "out-of-bounds"
+  | "no-offset"
+  | "no-grid"
+  | "missing-field"
+  | "empty"
+  | "not-instance"
+  | "kind-mismatch"
+  | "unknown-op"
+  | "unbound"
+  | "not-finite"
+  | "invalid-value"
+  | "threw"
+  | "undefined-result"
+  | "args"
+  | "cycle"
+  | "bad-expression";
+
+const CODE_OF: Readonly<Record<ErrorKind, ErrorCode>> = {
+  "unknown-key": "#REF!",
+  "not-a-pair": "#REF!",
+  "out-of-bounds": "#REF!",
+  "no-offset": "#REF!",
+  "no-grid": "#REF!",
+  "missing-field": "#N/A",
+  empty: "#N/A",
+  "not-instance": "#VALUE!",
+  "kind-mismatch": "#VALUE!",
+  "bad-expression": "#VALUE!",
+  "unknown-op": "#NAME?",
+  unbound: "#NAME?",
+  "not-finite": "#NUM!",
+  "invalid-value": "#NUM!",
+  threw: "#CALC!",
+  "undefined-result": "#CALC!",
+  args: "#ARGS",
+  cycle: "#CYCLE!",
+};
+
+/** A Vex error. It is a value: a program can catch it with `ifError`. */
+export interface VexError {
+  /** The spreadsheet-style code, for example `#REF!`. */
+  readonly code: ErrorCode;
+  /** The cause in more detail. */
+  readonly kind: ErrorKind;
+  /** A sentence that tells what went wrong. */
+  readonly message: string;
+  /** The position of the failed node in the expression tree. The root is `[]`. */
+  readonly path: readonly number[];
+  /** The key where the evaluation started. */
+  readonly origin?: string;
+  /** The key where relative references read when the error occurred. */
+  readonly focus?: string;
+  /** The op name, for errors of an op. */
+  readonly op?: string;
+  /** The errors of the arguments, for the code `#ARGS`. */
+  readonly causes?: readonly VexError[];
+  /** The value that an op threw, for the kind `threw`. */
+  readonly thrown?: unknown;
+}
+
+/** The details that a caller can give to `vexError`. */
+export interface ErrorDetails {
+  readonly path?: readonly number[];
+  readonly origin?: string;
+  readonly focus?: string;
+  readonly op?: string;
+  readonly causes?: readonly VexError[];
+  readonly thrown?: unknown;
+}
+
+/** This function gives the code of an error kind. */
+export const codeOf = (kind: ErrorKind): ErrorCode => CODE_OF[kind];
+
+/** This function makes a `VexError`. */
+export function vexError(kind: ErrorKind, message: string, details: ErrorDetails = {}): VexError {
+  return {
+    code: CODE_OF[kind],
+    kind,
+    message,
+    path: details.path ?? [],
+    ...(details.origin === undefined ? {} : { origin: details.origin }),
+    ...(details.focus === undefined ? {} : { focus: details.focus }),
+    ...(details.op === undefined ? {} : { op: details.op }),
+    ...(details.causes === undefined ? {} : { causes: details.causes }),
+    ...(details.thrown === undefined ? {} : { thrown: details.thrown }),
+  };
+}
+
+/** This function gives a short text for an error, for example `#REF! unknown-key: there is no key "Z"`. */
+export const formatError = (e: VexError): string => `${e.code} ${e.kind}: ${e.message}`;

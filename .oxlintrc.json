@@ -1,7 +1,15 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "import", "vitest"],
-  "options": { "typeAware": true },
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "vitest"
+  ],
+  "options": {
+    "typeAware": true
+  },
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -18,7 +26,20 @@
     "typescript/switch-exhaustiveness-check": "error",
     "typescript/consistent-type-imports": "error",
     "typescript/no-non-null-assertion": "warn",
-    "import/no-cycle": "error"
+    "import/no-cycle": "error",
+    "typescript/consistent-return": "off",
+    "eslint/no-underscore-dangle": "off",
+    "typescript/no-unsafe-type-assertion": "warn",
+    "typescript/restrict-template-expressions": "warn",
+    "vitest/expect-expect": [
+      "error",
+      {
+        "assertFunctionNames": [
+          "expect",
+          "expectTypeOf"
+        ]
+      }
+    ]
   },
   "ignorePatterns": [
     "packages/legacy/**",
@@ -26,5 +47,20 @@
     "docs/**",
     "**/dist/**",
     "**/node_modules/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test-d.ts"
+      ],
+      "rules": {
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-return": "off"
+      }
+    }
   ]
 }

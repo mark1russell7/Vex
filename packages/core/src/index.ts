@@ -1,2 +1,15 @@
-/** The version of the package. */
-export const version: string = "0.1.0";
+/**
+ * The kernel of Vex: spaces, addresses, the expression IR, domains, the interpreter and its folds.
+ */
+export * from "./result.ts";
+export * from "./errors.ts";
+export * from "./ir.ts";
+export * from "./space.ts";
+export * from "./domain.ts";
+export * from "./list.ts";
+export * from "./trace.ts";
+export * from "./evaluate.ts";
+export * from "./deps.ts";
+export * from "./json.ts";
+export * from "./traversal.ts";
+export * from "./builder.ts";

@@ -1,0 +1,499 @@
+/**
+ * The typed builder. Method calls make an expression of the IR. The builder has no other job: it does not
+ * evaluate anything until a caller asks for a value.
+ */
+import type { AnyDomain, Domain, OpSpec } from "./domain.ts";
+import { evaluate, explain, type EvalOptions, type ExtHandler, type FreeFn } from "./evaluate.ts";
+import { app, each, index as indexMove, key as keyMove, let_, lit, offset as offsetMove, other as otherMove, origin as originMove, rec, ref, toPath, v, type Axis, type Expr, type Move } from "./ir.ts";
+import { toOptional, type Optional, type Result } from "./result.ts";
+import type { Space } from "./space.ts";
+import type { Trace } from "./trace.ts";
+import { traversal, type Traversal } from "./traversal.ts";
+
+// ---------------------------------------------------------------- argument tokens
+
+declare const ARG_TYPE: unique symbol;
+declare const CHAIN_VALUE: unique symbol;
+
+/** An argument token: an expression with the static type `T` of its value. */
+export interface Arg<T> {
+  readonly kind: "vex.arg";
+  readonly expr: Expr;
+  /** This phantom member carries the type. It is not present at run time. */
+  readonly [ARG_TYPE]?: T;
+}
+
+const argToken = <T>(expr: Expr): Arg<T> => ({ kind: "vex.arg", expr });
+
+
+// ---------------------------------------------------------------- type helpers
+
+/** The keys of `O` whose values have the type `T`. */
+export type KeysOfType<O, T> = { [P in keyof O]-?: O[P] extends T ? P : never }[keyof O] & string;
+
+/** The method names of `D`. */
+export type MethodKeys<D> = { [P in keyof D]-?: D[P] extends (...args: never[]) => unknown ? P : never }[keyof D] & string;
+
+/** The value type of a domain. */
+export type DomainValue<Dm> = Dm extends Domain<string, infer D, infer _Ops> ? D : never;
+
+type OpsOf<Dm> = Dm extends Domain<string, unknown, infer Ops> ? Ops : Dm extends { readonly ops: infer Ops } ? Ops : never;
+
+/** The op names that a chain over a value of domain `Dm` can use. */
+export type OpNames<Dm> =
+  | (keyof OpsOf<Dm> & string)
+  | (Dm extends { readonly methods: "all" } ? MethodKeys<DomainValue<Dm>> : never);
+
+type FnOf<Dm, M extends string> = M extends keyof OpsOf<Dm>
+  ? OpsOf<Dm>[M] extends { readonly fn: (self: never, ...args: infer P) => infer R }
+    ? (...args: P) => R
+    : M extends keyof DomainValue<Dm>
+      ? DomainValue<Dm>[M]
+      : never
+  : M extends keyof DomainValue<Dm>
+    ? DomainValue<Dm>[M]
+    : never;
+
+/** The parameters of op `M` after the receiver. */
+export type OpParams<Dm, M extends string> = FnOf<Dm, M> extends (...args: infer P) => unknown ? P : never;
+
+/** The value type that op `M` gives. */
+export type OpReturn<Dm, M extends string> = FnOf<Dm, M> extends (...args: never[]) => infer R ? R : never;
+
+type Lifts<Dm, M extends string> = M extends keyof OpsOf<Dm> ? (OpsOf<Dm>[M] extends { readonly liftScalar: true } ? true : false) : false;
+
+/** The first domain of `Dms` whose values include `T`, or `never`. */
+export type DomainFor<Dms extends readonly AnyDomain[], T> = Dms extends readonly [infer H, ...infer R extends readonly AnyDomain[]]
+  ? [T] extends [never]
+    ? never
+    : [T] extends [DomainValue<H>]
+      ? H
+      : DomainFor<R, T>
+  : never;
+
+type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
+type LastOf<U> = UnionToIntersection<U extends unknown ? () => U : never> extends () => infer R ? R : never;
+
+/** `true` if `other()` is permitted for the key type: a pair of keys, or keys that the compiler does not know. */
+export type AllowsOther<K extends string> = string extends K
+  ? true
+  : `${number}` extends K
+    ? true
+    : [Exclude<K, LastOf<K>>] extends [never]
+      ? false
+      : [Exclude<Exclude<K, LastOf<K>>, LastOf<Exclude<K, LastOf<K>>>>] extends [never]
+        ? true
+        : false;
+
+/**
+ * The inputs for an argument with the parameter type `P`. The input can be a literal of type `P`, but not a bare
+ * string. It can be a field of the record with type `P`, an argument token, or a chain that gives `P`. If the op
+ * lifts scalars, it can also be a number.
+ */
+export type ArgInput<P, Ctx extends ChainContext, Lift extends boolean> =
+  | (P extends string ? never : P)
+  | KeysOfType<Ctx["record"], P>
+  | Arg<P>
+  | ChainOf<Ctx, P>
+  | (Lift extends true ? ([P] extends [DomainValue<DomainFor<Ctx["domains"], P>>] ? number : never) : never);
+
+type MapArgs<P extends readonly unknown[], Ctx extends ChainContext, Lift extends boolean> = { [I in keyof P]: ArgInput<P[I], Ctx, Lift> };
+
+/** The static context of a chain: its domains, its key type and its record type. */
+export interface ChainContext {
+  readonly domains: readonly AnyDomain[];
+  readonly keys: string;
+  readonly record: unknown;
+}
+
+/** The ops section `._` of a chain whose value has domain `Dm`. */
+export type OpsProxy<Ctx extends ChainContext, Dm> = {
+  readonly [M in OpNames<Dm>]: (...args: MapArgs<OpParams<Dm, M>, Ctx, Lifts<Dm, M>>) => ChainOf<Ctx, OpReturn<Dm, M>>;
+};
+
+// ---------------------------------------------------------------- chain types
+
+/** The members of every chain. */
+export interface ChainBase<Ctx extends ChainContext, T> {
+  readonly kind: "vex.chain";
+  /** This phantom member carries the value type. It is not present at run time. */
+  readonly [CHAIN_VALUE]?: T;
+  /** The expression of the chain, as plain data. */
+  readonly program: Expr;
+  /** This method evaluates the chain at a key. An error gives `none`. */
+  at(k: Ctx["keys"]): Optional<T>;
+  /** This method is the same as `at`. The v0.9 spec calls it `value`. */
+  value(k: Ctx["keys"]): Optional<T>;
+  /** This method evaluates the chain at a key, and gives the error if there is one. */
+  result(k: Ctx["keys"]): Result<T>;
+  /** This method evaluates the chain at a key, with a trace of each node. */
+  explain(k: Ctx["keys"]): Trace;
+  /** This method evaluates the chain at each key of the space (the start axis). */
+  all(): Traversal<Ctx["keys"], T>;
+  /** This method gives a chain whose value is a field of the record at the current address. */
+  from<P extends keyof Ctx["record"] & string>(field: P): ChainOf<Ctx, NonNullable<Ctx["record"][P]>>;
+  /** Navigation: later field references read at the key `k`. */
+  to(k: Ctx["keys"]): ChainOf<Ctx, T>;
+  /** Navigation: later field references read at the key with this position in the key order. */
+  index(i: number): ChainOf<Ctx, T>;
+  /** Navigation: later field references read at a relative position in an array or a grid. */
+  offset(...d: readonly number[]): ChainOf<Ctx, T>;
+  /** Navigation: later field references read at the origin again. */
+  origin(): ChainOf<Ctx, T>;
+  /** This method uses `fallback` when the chain gives an error. */
+  ifError<U>(fallback: ArgInput<U, Ctx, false> | T): ChainOf<Ctx, T | U>;
+  /** This method evaluates each branch with the current value, and gives a record of the results. */
+  fork<const B extends Readonly<Record<string, (c: ChainOf<Ctx, T>) => ChainBase<Ctx, unknown>>>>(branches: B): ChainOf<Ctx, { readonly [N in keyof B]: ValueOf<ReturnType<B[N]>> }>;
+  /** This method binds names for the body. The body gets a variable token for each name. */
+  with<const B extends Readonly<Record<string, unknown>>, U>(
+    binds: B,
+    body: (c: ChainOf<Ctx, T>, vars: { readonly [N in keyof B]: Arg<ArgValue<Ctx, B[N]>> }) => ChainBase<Ctx, U>,
+  ): ChainOf<Ctx, U>;
+  /** The others axis: the body evaluates at each key except the focus. Its start value is the current value. */
+  others<U>(body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
+  /** The neighbors axis of a grid. */
+  neighbors<U>(n: 4 | 8, body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
+  /** The all axis inside the expression: the body evaluates at each key, with the current value as start value. */
+  each<U>(body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
+}
+
+/** The options of an axis. */
+export interface AxisOpts<Ctx extends ChainContext, T> {
+  /** A test at each target. The body evaluates only at the targets where the test gives `true`. */
+  readonly where?: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, boolean>;
+}
+
+/** The members of a chain whose value has a domain. */
+export interface DomainMembers<Ctx extends ChainContext, Dm> {
+  /** The ops of the domain of the current value. */
+  readonly _: OpsProxy<Ctx, Dm>;
+}
+
+/** The members of a chain over a space whose keys permit `other()`. */
+export interface OtherMembers<Ctx extends ChainContext, T> {
+  /** Navigation: later field references read at the other key of the pair. */
+  other(): ChainOf<Ctx, T>;
+}
+
+/** A chain with the current value type `T`. */
+export type ChainOf<Ctx extends ChainContext, T> = ChainBase<Ctx, T> &
+  ([DomainFor<Ctx["domains"], T>] extends [never] ? unknown : DomainMembers<Ctx, DomainFor<Ctx["domains"], T>>) &
+  (AllowsOther<Ctx["keys"]> extends true ? OtherMembers<Ctx, T> : unknown);
+
+/** The value type of a chain. */
+export type ValueOf<C> = C extends { readonly [CHAIN_VALUE]?: infer T } ? T : never;
+
+/** The value type of an argument input. */
+export type ArgValue<Ctx extends ChainContext, A> = A extends Arg<infer T>
+  ? T
+  : A extends { readonly kind: "vex.chain" }
+    ? ValueOf<A>
+    : A extends keyof Ctx["record"] & string
+      ? NonNullable<Ctx["record"][A]>
+      : A;
+
+/** A chain whose value is a list: the result of an axis. */
+export interface ListChain<Ctx extends ChainContext, U> {
+  readonly kind: "vex.list-chain";
+  /** The expression of the chain, as plain data. */
+  readonly program: Expr;
+  count(opts?: ListOpts): ChainOf<Ctx, number>;
+  sum(this: ListChain<Ctx, number>, opts?: ListOpts): ChainOf<Ctx, number>;
+  mean(this: ListChain<Ctx, number>, opts?: ListOpts): ChainOf<Ctx, number>;
+  min(this: ListChain<Ctx, number>, opts?: ListOpts): ChainOf<Ctx, number>;
+  max(this: ListChain<Ctx, number>, opts?: ListOpts): ChainOf<Ctx, number>;
+  any(this: ListChain<Ctx, boolean>, opts?: ListOpts): ChainOf<Ctx, boolean>;
+  all(this: ListChain<Ctx, boolean>, opts?: ListOpts): ChainOf<Ctx, boolean>;
+  none(this: ListChain<Ctx, boolean>, opts?: ListOpts): ChainOf<Ctx, boolean>;
+  values(opts?: ListOpts): ChainOf<Ctx, readonly U[]>;
+  first(opts?: ListOpts): ChainOf<Ctx, U>;
+  reduce(op: OpNames<DomainFor<Ctx["domains"], U>>, opts?: ListOpts): ChainOf<Ctx, U>;
+}
+
+/** The options of a list reduction. */
+export interface ListOpts {
+  /** With `true`, an error item makes the result that error. The default skips error items. */
+  readonly strict?: boolean;
+}
+
+/** The root of the builder for one space. */
+export interface Root<Ctx extends ChainContext> {
+  /** This method starts a chain with a field of the record at the focus. */
+  from<P extends keyof Ctx["record"] & string>(field: P): ChainOf<Ctx, NonNullable<Ctx["record"][P]>>;
+  /** This method starts a chain with a value. */
+  start<const T>(value: T): ChainOf<Ctx, T>;
+  /** This method makes an absolute reference: the field of the record at key `k`. */
+  of<P extends keyof Ctx["record"] & string>(k: Ctx["keys"], field: P): Arg<NonNullable<Ctx["record"][P]>>;
+  /** This method makes a reference to a dotted path at the focus, with the type that the caller gives. */
+  field<T>(path: string): Arg<T>;
+  /** This method makes a literal argument. Use it for a string or an array: a bare string is a field reference. */
+  lit<const T>(value: T): Arg<T>;
+  /** The space of the root. */
+  readonly space: Space<Ctx["keys"], Ctx["record"]>;
+}
+
+/** The options of the builder. */
+export interface VexOptions {
+  /** Free function ops. */
+  readonly fns?: Readonly<Record<string, FreeFn>>;
+  /** Handlers of extension expression kinds. */
+  readonly extensions?: Readonly<Record<string, ExtHandler>>;
+}
+
+/** The entry point for a list of domains. */
+export interface VexEntry<Dms extends readonly AnyDomain[]> {
+  /** This method gives the root of the builder for a space. */
+  over<K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: O }>;
+  /** The domains. */
+  readonly domains: Dms;
+}
+
+// ---------------------------------------------------------------- run time
+
+interface Env {
+  readonly space: Space;
+  readonly domains: readonly AnyDomain[];
+  readonly options: VexOptions;
+}
+
+interface State {
+  readonly env: Env;
+  /** The current value. */
+  readonly expr: Expr;
+  /** The address where later field references read. */
+  readonly addr: readonly Move[];
+  /** The depth of nested axis and binding bodies, for unique variable names. */
+  readonly depth: number;
+}
+
+const isArg = (u: unknown): u is Arg<unknown> => typeof u === "object" && u !== null && (u as { kind?: unknown }).kind === "vex.arg";
+const isChainLike = (u: unknown): u is { readonly program: Expr } =>
+  typeof u === "object" && u !== null && ((u as { kind?: unknown }).kind === "vex.chain" || (u as { kind?: unknown }).kind === "vex.list-chain");
+
+/** This function turns a builder argument into an expression. A bare string is a field reference at `addr`. */
+function toExpr(a: unknown, addr: readonly Move[]): Expr {
+  if (typeof a === "string") return ref(toPath(a), addr);
+  if (isArg(a)) return a.expr;
+  if (isChainLike(a)) return a.program;
+  return lit(a);
+}
+
+const PROXY_RESERVED = new Set(["then", "catch", "finally", "toJSON", "valueOf", "toString", "constructor", "inspect", "asymmetricMatch", "$$typeof", "nodeType"]);
+
+class ChainImpl {
+  readonly kind = "vex.chain" as const;
+  readonly #s: State;
+
+  constructor(s: State) {
+    this.#s = s;
+  }
+
+  get program(): Expr {
+    return this.#s.expr;
+  }
+
+  get _(): Readonly<Record<string, (...args: readonly unknown[]) => ChainImpl>> {
+    const s = this.#s;
+    return new Proxy(Object.create(null) as Record<string, never>, {
+      get: (_t, prop): unknown => {
+        if (typeof prop !== "string" || PROXY_RESERVED.has(prop)) return undefined;
+        return (...args: readonly unknown[]): ChainImpl => new ChainImpl({ ...s, expr: app(prop, s.expr, ...args.map((a) => toExpr(a, s.addr))) });
+      },
+    });
+  }
+
+  #opts(k: string): EvalOptions {
+    const { env } = this.#s;
+    return {
+      space: env.space,
+      origin: k,
+      domains: env.domains,
+      ...(env.options.fns === undefined ? {} : { fns: env.options.fns }),
+      ...(env.options.extensions === undefined ? {} : { extensions: env.options.extensions }),
+    };
+  }
+
+  result(k: string): Result<unknown> {
+    return evaluate(this.#s.expr, this.#opts(k));
+  }
+  at(k: string): Optional<unknown> {
+    return toOptional(this.result(k));
+  }
+  value(k: string): Optional<unknown> {
+    return this.at(k);
+  }
+  explain(k: string): Trace {
+    return explain(this.#s.expr, this.#opts(k));
+  }
+  all(): Traversal<string, unknown> {
+    const { env } = this.#s;
+    const items = env.space.keys.map((k) => ({ key: k, result: this.result(k) }));
+    return traversal(items, env);
+  }
+
+  from(field: string): ChainImpl {
+    return new ChainImpl({ ...this.#s, expr: ref(toPath(field), this.#s.addr) });
+  }
+
+  #move(m: Move): ChainImpl {
+    return new ChainImpl({ ...this.#s, addr: [...this.#s.addr, m] });
+  }
+  to(k: string): ChainImpl {
+    return this.#move(keyMove(k));
+  }
+  index(i: number): ChainImpl {
+    return this.#move(indexMove(i));
+  }
+  offset(...d: readonly number[]): ChainImpl {
+    return this.#move(offsetMove(...d));
+  }
+  other(): ChainImpl {
+    return this.#move(otherMove);
+  }
+  origin(): ChainImpl {
+    return this.#move(originMove);
+  }
+
+  ifError(fallback: unknown): ChainImpl {
+    return new ChainImpl({ ...this.#s, expr: app("ifError", this.#s.expr, toExpr(fallback, this.#s.addr)) });
+  }
+
+  /** This method binds the current value to a fresh name, and gives a chain that starts from that name. */
+  #bound(): { readonly name: string; readonly start: ChainImpl } {
+    const name = `$${this.#s.depth}`;
+    return { name, start: new ChainImpl({ ...this.#s, expr: v(name), depth: this.#s.depth + 1 }) };
+  }
+
+  fork(branches: Readonly<Record<string, (c: ChainImpl) => { readonly program: Expr }>>): ChainImpl {
+    const { name, start } = this.#bound();
+    const fields: Record<string, Expr> = {};
+    for (const [n, f] of Object.entries(branches)) fields[n] = f(start).program;
+    return new ChainImpl({ ...this.#s, expr: let_({ [name]: this.#s.expr }, rec(fields)) });
+  }
+
+  with(binds: Readonly<Record<string, unknown>>, body: (c: ChainImpl, vars: Readonly<Record<string, Arg<unknown>>>) => { readonly program: Expr }): ChainImpl {
+    const depth = this.#s.depth;
+    const bindExprs: Record<string, Expr> = {};
+    const vars: Record<string, Arg<unknown>> = {};
+    for (const [n, a] of Object.entries(binds)) {
+      const unique = `${n}$${depth}`;
+      bindExprs[unique] = toExpr(a, this.#s.addr);
+      vars[n] = argToken(v(unique));
+    }
+    const inner = body(new ChainImpl({ ...this.#s, depth: depth + 1 }), vars);
+    return new ChainImpl({ ...this.#s, expr: let_(bindExprs, inner.program) });
+  }
+
+  #axis(a: Axis, body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    const { name, start } = this.#bound();
+    // Inside the axis, the focus is the target, so the address of the body starts empty.
+    const inTarget = new ChainImpl({ ...start.#s, addr: [] });
+    const inner = body(inTarget);
+    const axis: Axis = opts?.where === undefined ? a : { t: "where", axis: a, test: opts.where(inTarget).program };
+    return new ListChainImpl({ ...this.#s, expr: let_({ [name]: this.#s.expr }, each(axis, inner.program)) });
+  }
+  others(body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    return this.#axis({ t: "others" }, body, opts);
+  }
+  neighbors(n: 4 | 8, body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    return this.#axis({ t: "neighbors", n }, body, opts);
+  }
+  each(body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    return this.#axis({ t: "all" }, body, opts);
+  }
+}
+
+class ListChainImpl {
+  readonly kind = "vex.list-chain" as const;
+  readonly #s: State;
+  constructor(s: State) {
+    this.#s = s;
+  }
+  get program(): Expr {
+    return this.#s.expr;
+  }
+  #op(op: string, extra: readonly Expr[], opts?: ListOpts): ChainImpl {
+    const args = opts?.strict === true ? [...extra, lit({ strict: true })] : extra;
+    return new ChainImpl({ ...this.#s, expr: app(op, this.#s.expr, ...args) });
+  }
+  count(opts?: ListOpts): ChainImpl {
+    return this.#op("count", [], opts);
+  }
+  sum(opts?: ListOpts): ChainImpl {
+    return this.#op("sum", [], opts);
+  }
+  mean(opts?: ListOpts): ChainImpl {
+    return this.#op("mean", [], opts);
+  }
+  min(opts?: ListOpts): ChainImpl {
+    return this.#op("min", [], opts);
+  }
+  max(opts?: ListOpts): ChainImpl {
+    return this.#op("max", [], opts);
+  }
+  any(opts?: ListOpts): ChainImpl {
+    return this.#op("any", [], opts);
+  }
+  all(opts?: ListOpts): ChainImpl {
+    return this.#op("all", [], opts);
+  }
+  none(opts?: ListOpts): ChainImpl {
+    return this.#op("none", [], opts);
+  }
+  values(opts?: ListOpts): ChainImpl {
+    return this.#op("values", [], opts);
+  }
+  first(opts?: ListOpts): ChainImpl {
+    return this.#op("first", [], opts);
+  }
+  reduce(op: string, opts?: ListOpts): ChainImpl {
+    return this.#op("reduce", [lit(op)], opts);
+  }
+}
+
+class RootImpl {
+  readonly #env: Env;
+  constructor(env: Env) {
+    this.#env = env;
+  }
+  get space(): Space {
+    return this.#env.space;
+  }
+  #chain(expr: Expr): ChainImpl {
+    return new ChainImpl({ env: this.#env, expr, addr: [], depth: 0 });
+  }
+  from(field: string): ChainImpl {
+    return this.#chain(ref(toPath(field)));
+  }
+  start(value: unknown): ChainImpl {
+    return this.#chain(toExpr(value, []));
+  }
+  of(k: string, field: string): Arg<unknown> {
+    return argToken(ref(toPath(field), [keyMove(k)]));
+  }
+  field(path: string): Arg<unknown> {
+    return argToken(ref(toPath(path)));
+  }
+  lit(value: unknown): Arg<unknown> {
+    return argToken(lit(value));
+  }
+}
+
+/**
+ * This function gives the entry point of the builder for a list of domains. The interpreter finds the op of a
+ * value in the first domain that accepts the value.
+ */
+export function vex<const Dms extends readonly AnyDomain[]>(...domains: Dms): VexEntry<Dms> & { withOptions(options: VexOptions): VexEntry<Dms> } {
+  const make = (options: VexOptions): VexEntry<Dms> => ({
+    domains,
+    over: <K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: O }> =>
+      new RootImpl({ space: s, domains, options }) as unknown as Root<{ readonly domains: Dms; readonly keys: K; readonly record: O }>,
+  });
+  return { ...make({}), withOptions: make };
+}
+
+/** The type of a domain value, from the domain object. */
+export type ValueOfDomain<Dm> = DomainValue<Dm>;
+
+/** An op specification type, for domain authors. */
+export type { OpSpec };

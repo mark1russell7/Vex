@@ -861,7 +861,10 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 ### 14.4 Open items
 
 - P5 done: the tsdown build, the package check (publint, attw and a program against the tarballs), Changesets, and a release workflow that the owner starts by hand.
-- P5 open: `sheet()` with `#CYCLE!`, `compile` and the Graph layout pilot. The pilot uses the grid layout of Graph. The packed layout is an ordered fold, so it is not a good fit for Vex formulas.
+- P5 done: `sheet()` with `#CYCLE!` (spec §9). A cell reference is an `ext` node, so the IR has no new kind. The run uses the algorithm of Tarjan, so each cell on a cycle gives `#CYCLE!` in any order of evaluation (property P9).
+- P5 done: the grid pilot in `@vex/pilots`. One Vex program gives the same rectangles as the grid layout of Graph on random items. Graph is a private repository, so the pilot compares with a new implementation of the same behavior, not with a copy of the Graph code. The owner can do the direct comparison in a local copy.
+- The packed layout of Graph is an ordered fold. It is not a good fit for Vex formulas.
+- P5 open: `compile`.
 - The mutation score: tests for the error messages and the conditions that survive.
 - The owner decides these items, because they change other repositories or public names. The items are D9 (the name of the repository), D11 (the template fixes upstream) and D12 (the workspace `CLAUDE.md`). The shared Optional package and the first npm release are also decisions of the owner.
 - The research reports in `docs/research/` stay local. They contain local paths and the names of private repositories. The links to them in this document work only in a local copy.

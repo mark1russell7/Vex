@@ -28,6 +28,7 @@ Vex 1.0 is in development. The specification is in [`spec/README.md`](./spec/REA
 | [`@vex/core`](./packages/core) | The kernel: spaces, addresses, the expression IR, domains, the interpreter, traces |
 | [`@vex/domains`](./packages/domains) | Domains for 2D vectors, named-component vectors, colors and angles |
 | [`@vex/testkit`](./packages/testkit) | Arbitraries, law checks and the reference interpreter for property tests |
+| [`@vex/pilots`](./packages/pilots) | Programs of other projects in Vex: the grid layout of Graph |
 | [`@vex/cli`](./packages/cli) | The workspace commands of the template |
 
 ## Commands

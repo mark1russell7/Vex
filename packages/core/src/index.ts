@@ -12,4 +12,5 @@ export * from "./evaluate.ts";
 export * from "./deps.ts";
 export * from "./json.ts";
 export * from "./traversal.ts";
+export * from "./sheet.ts";
 export * from "./builder.ts";

@@ -4,7 +4,8 @@
  */
 import type { AnyDomain, Domain, OpSpec } from "./domain.ts";
 import { evaluate, explain, type EvalOptions, type ExtHandler, type FreeFn } from "./evaluate.ts";
-import { app, each, index as indexMove, key as keyMove, let_, lit, offset as offsetMove, other as otherMove, origin as originMove, rec, ref, toPath, v, type Axis, type Expr, type Move } from "./ir.ts";
+import { app, each, ext, index as indexMove, key as keyMove, let_, lit, offset as offsetMove, other as otherMove, origin as originMove, rec, ref, toPath, v, type Addr, type Axis, type Expr, type Move } from "./ir.ts";
+import { cell as cellRef, SheetRun } from "./sheet.ts";
 import { toOptional, type Optional, type Result } from "./result.ts";
 import type { Space } from "./space.ts";
 import type { Trace } from "./trace.ts";
@@ -244,8 +245,52 @@ export interface Root<Ctx extends ChainContext> {
   ofPath<T>(k: Ctx["keys"], path: string): Arg<T>;
   /** This method makes a record argument from field arguments. */
   rec<const F extends Readonly<Record<string, unknown>>>(fields: F): Arg<{ readonly [N in keyof F]: ArgValue<Ctx, F[N]> }>;
+  /**
+   * This method makes an extension argument: the node `ext(kind, data)`. The handler of `kind` in the options of
+   * `withOptions` gives its value. The caller gives the type `T` of that value.
+   */
+  ext<T>(kind: string, data?: unknown): Arg<T>;
+  /** This method starts a sheet over the space: named columns of formulas. Refer to `Sheet`. */
+  sheet(): Sheet<Ctx, object>;
   /** The space of the root. */
   readonly space: Space<Ctx["keys"], Ctx["record"]>;
+}
+
+/** The root of a column formula: the root of the builder, and references to the cells of the sheet. */
+export interface SheetRoot<Ctx extends ChainContext, Cols> extends Root<Ctx> {
+  /**
+   * This method makes a cell reference: the column `column` at the key `at`, or at the address `at` from the focus.
+   * Without `at`, it reads at the focus. The type is the type of a column before this one.
+   */
+  cell<N extends keyof Cols & string>(column: N, at?: Ctx["keys"] | Addr): Arg<Cols[N]>;
+  /** This method makes a cell reference to any column, also this column or a later one. The caller gives the type. */
+  cell<T>(column: string, at?: Ctx["keys"] | Addr): Arg<T>;
+}
+
+/** One row of a sheet: the key and the result of each column. */
+export interface SheetRow<K extends string, Cols> {
+  readonly key: K;
+  readonly cells: { readonly [N in keyof Cols]: Result<Cols[N]> };
+}
+
+/**
+ * A sheet: named columns of formulas over a space, like the computed columns of a spreadsheet. A formula reads the
+ * other columns with `cell`. Each evaluation evaluates a cell once, and each cell on a cycle of references gives
+ * `#CYCLE!`. A sheet is immutable: `column` gives a new sheet.
+ */
+export interface Sheet<Ctx extends ChainContext, Cols> {
+  /** This method gives a new sheet with one more column. The formula gets a root with `cell`. */
+  column<const N extends string, C extends ChainBase<Ctx, unknown>>(name: N, formula: (r: SheetRoot<Ctx, Cols>) => C): Sheet<Ctx, Cols & { readonly [P in N]: ValueOf<C> }>;
+  /** The program of each column. */
+  readonly columns: Readonly<Record<string, Expr>>;
+  /** This method evaluates one cell, and gives the error if there is one. */
+  result<N extends keyof Cols & string>(k: Ctx["keys"], column: N): Result<Cols[N]>;
+  /** This method evaluates one cell. An error gives `none`. */
+  at<N extends keyof Cols & string>(k: Ctx["keys"], column: N): Optional<Cols[N]>;
+  /** This method evaluates one cell, with a trace of the nodes of its column. */
+  explain(k: Ctx["keys"], column: keyof Cols & string): Trace;
+  /** This method evaluates each cell, in key order, with one result for each cell. */
+  table(): readonly SheetRow<Ctx["keys"], Cols>[];
 }
 
 /** The options of the builder. */
@@ -496,10 +541,66 @@ class RootImpl {
   ofPath(k: string, path: string): Arg<unknown> {
     return argToken(ref(toPath(path), [keyMove(k)]));
   }
+  ext(kind: string, data: unknown = null): Arg<unknown> {
+    return argToken(ext(kind, data));
+  }
+  sheet(): SheetImpl {
+    return new SheetImpl(this.#env, new Map());
+  }
   rec(fields: Readonly<Record<string, unknown>>): Arg<unknown> {
     const out: Record<string, Expr> = {};
     for (const [n, a] of Object.entries(fields)) out[n] = toExpr(a, []);
     return argToken(rec(out));
+  }
+}
+
+class SheetRootImpl extends RootImpl {
+  cell(column: string, at?: string | Addr): Arg<unknown> {
+    const addr: Addr = at === undefined ? [] : typeof at === "string" ? [keyMove(at)] : at;
+    return argToken(cellRef(column, addr));
+  }
+}
+
+class SheetImpl {
+  readonly #env: Env;
+  readonly #columns: ReadonlyMap<string, Expr>;
+  constructor(env: Env, columns: ReadonlyMap<string, Expr>) {
+    this.#env = env;
+    this.#columns = columns;
+  }
+  get columns(): Readonly<Record<string, Expr>> {
+    return Object.freeze(Object.fromEntries(this.#columns));
+  }
+  column(name: string, formula: (r: SheetRootImpl) => { readonly program: Expr }): SheetImpl {
+    const program = formula(new SheetRootImpl(this.#env)).program;
+    return new SheetImpl(this.#env, new Map([...this.#columns, [name, program]]));
+  }
+  #run(): SheetRun {
+    const { space: s, domains, options } = this.#env;
+    return new SheetRun(this.#columns, {
+      space: s,
+      domains,
+      ...(options.fns === undefined ? {} : { fns: options.fns }),
+      ...(options.extensions === undefined ? {} : { extensions: options.extensions }),
+    });
+  }
+  result(k: string, column: string): Result<unknown> {
+    const run = this.#run();
+    run.warm(column, k);
+    return run.cell(column, k);
+  }
+  at(k: string, column: string): Optional<unknown> {
+    return toOptional(this.result(k, column));
+  }
+  explain(k: string, column: string): Trace {
+    const run = this.#run();
+    run.warm(column, k);
+    return run.explain(column, k);
+  }
+  table(): readonly SheetRow<string, Record<string, unknown>>[] {
+    const run = this.#run();
+    const names = [...this.#columns.keys()];
+    return this.#env.space.keys.map((key) => ({ key, cells: Object.fromEntries(names.map((c) => [c, run.cell(c, key)])) }));
   }
 }
 

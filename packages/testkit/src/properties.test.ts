@@ -1,4 +1,4 @@
-import { app, each, evaluate, explain, lit, parse, ref, serialize, space, vex, type Expr, type Space } from "@vex/core";
+import { app, cell, each, evaluate, explain, lit, parse, ref, serialize, SheetRun, space, vex, type Expr, type Space } from "@vex/core";
 import { BoolDomain, NumDomain, Vec2, Vec2Domain } from "@vex/domains";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -134,6 +134,37 @@ describe("properties of the builder", () => {
           seen.push({ chain, json: JSON.stringify(chain.program) });
         }
         for (const s of seen) expect(JSON.stringify(s.chain.program)).toBe(s.json);
+      }),
+    );
+  });
+});
+
+describe("properties of sheets", () => {
+  // A random sheet: four columns over three keys. Each formula adds a literal and up to two cell reads, and a
+  // read can have a fallback with ifError. Thus the sheets have cycles, self references and caught errors.
+  const COLUMNS = ["c0", "c1", "c2", "c3"] as const;
+  const KEYS = ["A", "B", "C"] as const;
+  const read = fc
+    .tuple(fc.constantFrom(...COLUMNS), fc.option(fc.constantFrom(...KEYS), { nil: undefined }), fc.option(fc.integer({ min: -9, max: 9 }), { nil: undefined }))
+    .map(([c, k, fallback]): Expr => {
+      const r = cell(c, k === undefined ? [] : [{ t: "key", key: k }]);
+      return fallback === undefined ? r : app("ifError", r, lit(fallback));
+    });
+  const formula = fc.tuple(fc.integer({ min: -9, max: 9 }), fc.array(read, { maxLength: 2 })).map(([n, reads]) => reads.reduce<Expr>((acc, r) => app("add", acc, r), lit(n)));
+  const sheetArb = fc.tuple(formula, formula, formula, formula).map((fs) => new Map(COLUMNS.map((c, i) => [c, fs[i] ?? lit(0)])));
+  const cells = KEYS.flatMap((k) => COLUMNS.map((c) => [c, k] as const));
+  const s = space.record({ A: {}, B: {}, C: {} });
+
+  it("P9 SHEET.ORDER: the result of each cell does not depend on the order of the evaluations", () => {
+    fc.assert(
+      fc.property(sheetArb, fc.shuffledSubarray(cells, { minLength: cells.length }), (columns, order) => {
+        const inOrder = new SheetRun(columns, { space: s, domains: DOMAINS });
+        const expected = cells.map(([c, k]) => fromCore(inOrder.cell(c, k)));
+        const shuffled = new SheetRun(columns, { space: s, domains: DOMAINS });
+        for (const [c, k] of order) shuffled.cell(c, k);
+        expect(cells.map(([c, k]) => fromCore(shuffled.cell(c, k)))).toEqual(expected);
+        // A fresh run for each cell gives the same result too.
+        expect(cells.map(([c, k]) => fromCore(new SheetRun(columns, { space: s, domains: DOMAINS }).cell(c, k)))).toEqual(expected);
       }),
     );
   });

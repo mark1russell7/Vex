@@ -259,6 +259,34 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
 
+  packages/pilots:
+    dependencies:
+      '@vex/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vex/domains':
+        specifier: workspace:*
+        version: link:../domains
+    devDependencies:
+      '@mark1russell7/cue':
+        specifier: github:mark1russell7/cue
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+      '@vex/testkit':
+        specifier: workspace:*
+        version: link:../testkit
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+
   packages/site:
     dependencies:
       '@astrojs/react':
@@ -1368,6 +1396,12 @@ packages:
 
   '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/3a965d5d7ae6ace662475b52b0c6a32122d5ca34':
     resolution: {gitHosted: true, integrity: sha512-2+NCa3Mm19S5w/xptZLzJw0XJHM4AzBP/Ay7XwOp7zXOANehq6uJhTrhbfA/pInV7zuiqc2BQcCnuZPGBVWI3Q==, tarball: https://codeload.github.com/mark1russell7/cue/tar.gz/3a965d5d7ae6ace662475b52b0c6a32122d5ca34}
+    version: 1.0.0
+    engines: {node: '>=25.0.0', npm: '>=11.0.0'}
+    hasBin: true
+
+  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10':
+    resolution: {gitHosted: true, integrity: sha512-12RMJboloQodhzTscWR5DkQ7V7OiY7we2Io6Qq/Cwl1WkXVAB4wbGwnqlOAhriDDyCRq+kaDdk4DyF87iMH/+A==, tarball: https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10}
     version: 1.0.0
     engines: {node: '>=25.0.0', npm: '>=11.0.0'}
     hasBin: true
@@ -4978,6 +5012,8 @@ snapshots:
       yaml: 2.9.1
 
   '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/3a965d5d7ae6ace662475b52b0c6a32122d5ca34': {}
+
+  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10': {}
 
   '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab': {}
 

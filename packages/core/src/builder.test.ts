@@ -39,7 +39,7 @@ describe("the typed builder", () => {
   const pair = vex(PtDomain).over(space.record({ A, B }));
   const four = vex(PtDomain, Num).over(space.record({ A, B, C, D }));
 
-  it("SPEC.18.1: the separation test, with other()", () => {
+  it("EXAMPLE.SEPARATION: the separation test, with other()", () => {
     const sep = pair.from("position")._.add("size").other()._.subtract("position")._.anyNonPositive();
     expectTypeOf(sep.at("A")).toEqualTypeOf<Optional<boolean>>();
     expect(sep.at("A")).toEqual({ tag: "some", value: true });
@@ -47,14 +47,14 @@ describe("the typed builder", () => {
     expect(sep.all().values()).toEqual([true, false]);
   });
 
-  it("SPEC.18.2: the minimum distance to the others (V-042)", () => {
+  it("EXAMPLE.NEAREST: the minimum distance to the others (V-001, V-042)", () => {
     const minDist = four.from("position").others((e) => e._.subtract("position")._.length()).min();
     expectTypeOf(minDist.result("A")).toEqualTypeOf<Result<number>>();
     expect(value(minDist.result("A"))).toBe(1);
     expect(value(minDist.result("B"))).toBeCloseTo(Math.sqrt(18), 12);
   });
 
-  it("SPEC.18.3: reduce the offsets to the others with add", () => {
+  it("EXAMPLE.OFFSETS: reduce the offsets to the others with add", () => {
     const three = vex(PtDomain).over(space.record({ A, B, C }));
     const sum = three.from("position").others((e) => e._.subtract("position")).reduce("add");
     expect(value(sum.result("A"))).toEqual(new Pt(-9, -12));
@@ -75,7 +75,7 @@ describe("the typed builder", () => {
     expect(error(loose.from("position")._.add("size").other()._.subtract("position").result("A")).code).toBe("#REF!");
   });
 
-  it("V-010: chains are immutable: a later call does not change an earlier chain", () => {
+  it("BUILD.IMMUTABLE: a later call does not change an earlier chain (V-010)", () => {
     const base = pair.from("position");
     const added = base._.add("size");
     expect(value(base.result("A"))).toEqual(new Pt(0, 0));
@@ -208,7 +208,7 @@ describe("the types of the builder (TYPE.*)", () => {
     three.from("position").others((e) => e._.add("size")).min();
   });
 
-  it("TYPE.NO-ANY: no value type is any", () => {
+  it("TYPE.NO-ANY: no value type is any (V-012)", () => {
     expectTypeOf(pair.from("position")._.add("size").at("A")).not.toBeAny();
     expectTypeOf(pair.from("position")._.add("size").at("A")).toEqualTypeOf<Optional<Pt>>();
   });

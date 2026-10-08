@@ -93,7 +93,7 @@ describe("ops (CALL.*)", () => {
     expect(e.thrown).toBeInstanceOf(Error);
   });
 
-  it("CALL.RESULT: a non-finite number or an invalid domain value gives #NUM!", () => {
+  it("CALL.RESULT: a non-finite number or an invalid domain value gives #NUM! (V-022)", () => {
     const zero = space.record({ A: { p: new Pt(0, 0) } });
     expect(error(evaluate(app("scale", ref("p"), lit(Number.NaN)), at(zero, "A"))).code).toBe("#NUM!");
     expect(error(evaluate(app("scale", ref("p"), lit(Number.POSITIVE_INFINITY)), at(zero, "A"))).code).toBe("#NUM!");
@@ -117,7 +117,7 @@ describe("ops (CALL.*)", () => {
     expect(value(evaluate(app("concat", ref("name"), lit("!")), opts))).toBe("a!");
   });
 
-  it("SPEC.18.1: the separation test of a pair", () => {
+  it("EXAMPLE.SEPARATION: the separation test of a pair", () => {
     const sep = app("anyNonPositive", app("subtract", app("add", ref("position"), ref("size")), ref("position", [other])));
     expect(value(evaluate(sep, at(pair, "A")))).toBe(true);
     expect(value(evaluate(sep, at(pair, "B")))).toBe(false);
@@ -127,7 +127,7 @@ describe("ops (CALL.*)", () => {
 describe("bindings (LET.*)", () => {
   const pair = space.record({ A, B });
 
-  it("LET.BIND: let binds names for the body", () => {
+  it("LET.BIND: let binds names for the body (V-006)", () => {
     const e = let_({ base: ref("position"), k: lit(2) }, app("scale", app("add", v("base"), ref("size")), v("k")));
     expect(value(evaluate(e, at(pair, "A")))).toEqual(new Pt(4, 4));
   });
@@ -147,7 +147,7 @@ describe("bindings (LET.*)", () => {
     expect(value(evaluate(app("scale", ref("position", [key("B")]), v("k")), at(pair, "A", { vars: { k: 2 } })))).toEqual(new Pt(6, 8));
   });
 
-  it("REC: a record collects its fields, and failed fields give #ARGS", () => {
+  it("REC.FIELDS: a record collects its fields, and failed fields give #ARGS", () => {
     expect(value(evaluate(rec({ x: lit(1), p: ref("position") }), at(pair, "A")))).toEqual({ x: 1, p: new Pt(0, 0) });
     expect(error(evaluate(rec({ x: ref("q"), y: ref("r") }), at(pair, "A"))).code).toBe("#ARGS");
   });
@@ -160,13 +160,13 @@ describe("axes (AXIS.*) and list ops (LIST.*)", () => {
     each(axes.others, app("length", app("subtract", v("base"), ref("position")))),
   );
 
-  it("AXIS.OTHERS.ORIGIN: the base evaluates at the origin, the body at each target (spec §18.2, V-042)", () => {
+  it("AXIS.OTHERS.ORIGIN and EXAMPLE.NEAREST: the base evaluates at the origin, the body at each target (V-001, V-042)", () => {
     expect(value(evaluate(app("min", distances), at(four, "A")))).toBe(1);
     const list = value(evaluate(distances, at(four, "A")));
     expect(isVexList(list) && list.items.map((item) => item.key)).toEqual(["B", "C", "D"]);
   });
 
-  it("SPEC.18.3: reduce with a domain op over the others", () => {
+  it("EXAMPLE.OFFSETS: reduce with a domain op over the others", () => {
     const three = space.record({ A, B, C });
     const offsets = let_({ base: ref("position") }, each(axes.others, app("subtract", v("base"), ref("position"))));
     expect(value(evaluate(app("reduce", offsets, lit("add")), at(three, "A")))).toEqual(new Pt(-9, -12));
@@ -183,7 +183,7 @@ describe("axes (AXIS.*) and list ops (LIST.*)", () => {
     expect(error(evaluate(each(axes.other, ref("name")), at(four, "A"))).code).toBe("#REF!");
   });
 
-  it("LIST.LENIENT: list ops skip error items by default, and strict makes the first error the result", () => {
+  it("LIST.LENIENT: list ops skip error items by default, and strict makes the first error the result (V-013)", () => {
     const withMissing = space.record({ A, B, X: { name: "x" } });
     const lengths = each(axes.all, app("length", ref("position")));
     expect(value(evaluate(app("count", lengths), at(withMissing, "A")))).toBe(2);
@@ -224,7 +224,7 @@ describe("special forms (FORM.*)", () => {
     expect(value(evaluate(app("if", lit(true), lit(1), ref("missing")), at(s, "A")))).toBe(1);
     expect(error(evaluate(app("if", lit(1), lit(1), lit(2)), at(s, "A"))).kind).toBe("kind-mismatch");
   });
-  it("FORM.AND and FORM.OR short-circuit", () => {
+  it("FORM.AND-OR: and and or short-circuit", () => {
     expect(value(evaluate(app("and", lit(false), ref("missing")), at(s, "A")))).toBe(false);
     expect(value(evaluate(app("or", lit(true), ref("missing")), at(s, "A")))).toBe(true);
   });
@@ -235,6 +235,18 @@ describe("special forms (FORM.*)", () => {
 });
 
 describe("totality (EVAL.TOTAL)", () => {
+  it("EVAL.TOTAL: an op that throws inside a reduction gives an error value, not an exception (V-009)", () => {
+    const s = space.record({ A, B });
+    const r = evaluate(app("reduce", each(axes.all, ref("position")), lit("boom")), { space: s, origin: "A", domains: [PtDomain] });
+    expect(error(r).code).toBe("#CALC!");
+    const thrower = evaluate(app("reduce", each(axes.all, ref("position")), lit("add")), {
+      space: space.record({ A: { position: new Pt(Number.NaN, 0) }, B }),
+      origin: "A",
+      domains: [PtDomain],
+    });
+    expect(thrower.ok).toBe(false);
+  });
+
   it("a domain whose is test throws does not throw through evaluate", () => {
     const evil = { name: "Evil", kind: "vex.domain", ops: {}, is: (): boolean => { throw new Error("no"); } } as const;
     const s = space.record({ A });
@@ -257,7 +269,7 @@ describe("folds: explain, deps, JSON", () => {
   const pair = space.record({ A, B });
   const sep: Expr = app("subtract", app("add", ref("position"), ref("size")), ref("position", [other]));
 
-  it("TRACE: explain records one event for each node, in finish order, with reads", () => {
+  it("TRACE.EVENTS: explain records one event for each node, in finish order, with reads", () => {
     const t = explain(sep, at(pair, "A"));
     expect(t.events.map((e) => `${e.tag}:${e.label}`)).toEqual(["ref:position", "ref:size", "app:add", "ref:position", "app:subtract"]);
     expect(t.events[3]?.reads).toEqual([{ key: "B", path: ["position"], ok: true }]);
@@ -271,7 +283,7 @@ describe("folds: explain, deps, JSON", () => {
     expect(t.events.filter((e) => e.tag === "ref").map((e) => e.focus)).toEqual(["B", "C", "D"]);
   });
 
-  it("DEPS: deps gives each static read with its address and axes", () => {
+  it("DEPS.READS: deps gives each static read with its address and axes", () => {
     const e = let_({ base: ref("position") }, each(axes.others, app("subtract", v("base"), ref("position", [key("B")]))));
     expect(deps(e)).toEqual([
       { at: [], path: ["position"], axes: [] },
@@ -279,7 +291,7 @@ describe("folds: explain, deps, JSON", () => {
     ]);
   });
 
-  it("JSON: an expression round-trips, and domain literals need encode", () => {
+  it("IR.JSON: an expression round-trips, and domain literals need encode", () => {
     const e = app("add", ref("position"), lit(new Pt(1, 2)));
     const text = value(serialize(e, [PtDomain]));
     const back = value(parse(text, [PtDomain]));

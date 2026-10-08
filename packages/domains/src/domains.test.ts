@@ -13,7 +13,7 @@ const value = <T>(r: Result<T>): T => {
 const code = <T>(r: Result<T>): string => (r.ok ? "ok" : r.error.code);
 
 describe("Vec2", () => {
-  it("V-027: the methods are on the prototype, not on each instance", () => {
+  it("DOMAIN.OWNED: the methods are on the prototype, not on each instance (V-027)", () => {
     const v = new Vec2(1, 2);
     expect(Object.keys(v)).toEqual(["x", "y"]);
     expect(Object.hasOwn(v, "add")).toBe(false);

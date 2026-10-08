@@ -835,9 +835,9 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 | P0 Migrate | Done | Commit `890e6a3`. CI is green on Node 22, 24 and 26. |
 | P1 Kernel | Done | Commit `0357f95` |
 | P2 Surface | Done | Commits `749a3e1` and `1c9a17a`. `@vex/legacy` is gone. |
-| P3 Assurance | Done, with the changes of §14.2 | Commits `7e76f54` and `84234e8`, and the commit of this section |
-| P4 Site | Done | Commits `89161c6` and `a1c7cfe`. The site is live at [mark1russell7.github.io/Vex](https://mark1russell7.github.io/Vex/). |
-| P5 Interop | In progress | §14.4 |
+| P3 Assurance | Done, with the changes of §14.2 | Commits `7e76f54`, `84234e8`, `b815206` and `26d9b7f`. The mutation score is 90.7 %. |
+| P4 Site | Done | Commits `89161c6`, `a1c7cfe` and `643aaa8`. The site is live at [mark1russell7.github.io/Vex](https://mark1russell7.github.io/Vex/). |
+| P5 Interop | Done, except the items of the owner (§14.4) | Commits `b815206` (build, release), `d3be6d7` (sheets, pilot) and `6eff59c` (`compile`) |
 
 ### 14.2 Changes to the plan
 
@@ -853,19 +853,21 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 
 ### 14.3 Measurements
 
-- Coverage of `@vex/core`: statements 99.9 %, branches 99.4 %, functions 100 %, lines 100 %. The thresholds are 98, 96, 98 and 98.
-- Mutation score of `@vex/core`: 81.3 %. The tests found 1544 mutants, and 299 mutants survived. The target is 90 %. Most surviving mutants change an error message or a condition.
-- Speed on Node 25 with 60 boxes: the nearest-box program is approximately 21 times slower than hand-written loops. One step of the Game of Life on a 16 by 16 grid is approximately 86 times slower. The `compile` item of P5 addresses this.
-- Tests: 161 unit and property tests, 15 doc tests and 30 browser smoke tests.
+- Coverage of `@vex/core`: 100 % of the statements, branches, functions and lines. The thresholds are 98, 96, 98 and 98.
+- Mutation score of `@vex/core`: 90.7 %. The tests found 1898 mutants, and 194 mutants survived. The nightly workflow fails under 90 %.
+- The error catalog (`__golden__/errors.txt`) found three defects. An extension error had no location, a `where` test had the wrong focus, and an offset message had bad grammar. The fixes added the spec rule EVAL.LOCATION.
+- Speed with 60 boxes, measured on one machine: the closure compiler made the nearest-box program 2.0 times faster. It is approximately 17 times slower than hand-written loops (36 times before). One step of the Game of Life on a 16 by 16 grid is 2.1 times faster. It is approximately 36 times slower than hand-written loops (73 times before).
+- Tests: 181 unit and property tests, 20 doc tests, 2 schema tests and 35 browser tests.
 
 ### 14.4 Open items
 
 - P5 done: the tsdown build, the package check (publint, attw and a program against the tarballs), Changesets, and a release workflow that the owner starts by hand.
 - P5 done: `sheet()` with `#CYCLE!` (spec §9). A cell reference is an `ext` node, so the IR has no new kind. The run uses the algorithm of Tarjan, so each cell on a cycle gives `#CYCLE!` in any order of evaluation (property P9).
 - P5 done: the grid pilot in `@vex/pilots`. One Vex program gives the same rectangles as the grid layout of Graph on random items. Graph is a private repository, so the pilot compares with a new implementation of the same behavior, not with a copy of the Graph code. The owner can do the direct comparison in a local copy.
+- P5 done: `compile`. The interpreter is a closure compiler, so `evaluate` and `compile` have one semantics (spec rule EVAL.COMPILE, property P10).
+- §13 done: the site publishes `llms.txt` and the JSON Schema of the IR. A property test keeps the schema equal to `isExpr`.
 - The packed layout of Graph is an ordered fold. It is not a good fit for Vex formulas.
-- P5 open: `compile`.
-- The mutation score: tests for the error messages and the conditions that survive.
+- Later work: faster op lookup (a cache of methods for each prototype), one vector library for the family (§13), and a tree space with `parent` and `children` axes.
 - The owner decides these items, because they change other repositories or public names. The items are D9 (the name of the repository), D11 (the template fixes upstream) and D12 (the workspace `CLAUDE.md`). The shared Optional package and the first npm release are also decisions of the owner.
 - The research reports in `docs/research/` stay local. They contain local paths and the names of private repositories. The links to them in this document work only in a local copy.
 

@@ -1,2 +1,8 @@
-/** The version of the package. */
-export const version: string = "0.1.0";
+/**
+ * The test kit of Vex: fast-check arbitraries for spaces and expressions, the law checker for domains, and a
+ * reference interpreter for differential tests. Authors of new domains can use it too.
+ */
+export * from "./arbitraries.ts";
+export * from "./laws.ts";
+export * from "./reference.ts";
+export * from "./compare.ts";

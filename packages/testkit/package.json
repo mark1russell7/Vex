@@ -13,6 +13,7 @@
   "devDependencies": {
     "@mark1russell7/cue": "github:mark1russell7/cue",
     "@types/node": "^26.6.4",
+    "@vex/domains": "workspace:*",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
   },

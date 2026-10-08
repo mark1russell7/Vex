@@ -1,0 +1,52 @@
+---
+title: Vex
+description: Typed spreadsheet formulas over domain objects, with total evaluation and a reason for each missing value.
+template: splash
+hero:
+  tagline: Write one formula. Evaluate it at each record. When a value is missing, Vex tells you why.
+  actions:
+    - text: Take the tour
+      link: learn/tour/
+      icon: right-arrow
+    - text: Open the Lab
+      link: lab/
+      variant: minimal
+    - text: Read the spec
+      link: spec/
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+import Stepper from "../../components/Stepper.tsx";
+
+## Boxes on graph paper
+
+Vex started as layout math. A layout engine had boxes with a position and a size, and it asked questions like "does this box overlap another box?" The program below asks that question at each box.
+
+Drag a box. Each program on this page reads the same four boxes, so each one evaluates again. Select an origin to see the program from the view of another box. Move the slider to see each step of the evaluation.
+
+<Stepper client:visible program="overlaps" title="Does the box overlap another box?" />
+
+## What Vex is
+
+<CardGrid>
+  <Card title="A formula at each record" icon="seti:grid">
+    A Vex program evaluates at one key of a space of records. A field name reads at the focus. An address reads at another key, like a spreadsheet reference.
+  </Card>
+  <Card title="Axes" icon="random">
+    The others axis evaluates a body at each other key. The base value comes from the origin, and the fields come from each target.
+  </Card>
+  <Card title="Error values" icon="warning">
+    Vex does not throw. A failure is an error value with a code, for example `#REF!` or `#N/A`, and a trace shows where it started.
+  </Card>
+  <Card title="Your domains" icon="puzzle">
+    A domain tells Vex which values belong to it, which ops they have, and which laws the ops obey. Tests check each law.
+  </Card>
+</CardGrid>
+
+## Where to go next
+
+- [The tour](learn/tour/) adds one call at a time to a chain.
+- [The spreadsheet view](learn/spreadsheet/) shows a program as a column of formulas.
+- [Why none?](errors/ref/) explains each error code with a live example.
+- [The specification](spec/) shows the test status of each requirement.

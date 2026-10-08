@@ -99,3 +99,4 @@ reports/
 .stryker-tmp/
 .doctest/
 .astro/
+.playwright-mcp/

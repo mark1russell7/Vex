@@ -1,0 +1,208 @@
+/*
+ * The family tokens (tokens.css) mapped to the variables of Starlight. Starlight and the tokens both use the
+ * attribute data-theme on the html element, so the light and the dark theme follow the same switch.
+ * In Starlight, "white" is the text with the most contrast and "black" is the page, in both themes.
+ */
+:root,
+:root[data-theme="light"],
+:root[data-theme="dark"] {
+  --sl-font: var(--font-sans);
+  --sl-font-mono: var(--font-mono);
+  --sl-color-accent-low: var(--color-accent-wash);
+  --sl-color-accent: var(--color-accent);
+  --sl-color-accent-high: var(--color-accent-strong);
+  --sl-color-white: var(--color-ink);
+  --sl-color-gray-1: var(--color-ink);
+  --sl-color-gray-2: var(--color-ink-secondary);
+  --sl-color-gray-3: var(--color-ink-muted);
+  --sl-color-gray-4: var(--color-rule-strong);
+  --sl-color-gray-5: var(--color-rule);
+  --sl-color-gray-6: var(--color-surface-sunken);
+  --sl-color-gray-7: var(--color-surface);
+  --sl-color-black: var(--color-page);
+  --sl-color-bg-nav: color-mix(in srgb, var(--color-page) 92%, transparent);
+  --sl-color-bg-sidebar: var(--color-page);
+  --sl-color-hairline: var(--color-rule);
+  --sl-color-hairline-light: var(--color-rule);
+  --sl-color-hairline-shade: var(--color-rule-strong);
+  --sl-color-red: var(--color-mark);
+  --sl-color-red-low: var(--color-mark-wash);
+  --sl-color-red-high: var(--color-mark);
+}
+
+header.header {
+  backdrop-filter: blur(6px);
+}
+
+/* ---------------------------------------------------------------- the widgets of the site */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.graph-paper {
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: -1px -1px;
+}
+
+.vx-frame {
+  margin-block: var(--space-5);
+  border: 1px solid var(--color-rule);
+  border-top: 3px solid var(--color-ink);
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.vx-frame > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
+  color: var(--color-ink-secondary);
+}
+
+.vx-frame > header strong {
+  color: var(--color-ink);
+}
+
+.vx-body {
+  padding: var(--space-4);
+}
+
+.vx-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.vx-button {
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.vx-button:hover {
+  background: var(--color-surface-sunken);
+}
+
+.vx-button[aria-pressed="true"],
+.vx-button[data-variant="primary"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+.vx-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vx-code {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-rule);
+  background: var(--color-surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.vx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.05em 0.5em;
+  border: 1px solid var(--color-rule-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: baseline;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.vx-chip[data-state="pass"],
+.vx-chip[data-state="ok"] {
+  border-color: var(--status-good);
+  color: var(--status-good-ink);
+}
+
+.vx-chip[data-state="fail"],
+.vx-chip[data-state="error"] {
+  border-color: var(--color-mark);
+  background: var(--color-mark-wash);
+  color: var(--color-mark);
+}
+
+.vx-chip[data-state="unknown"] {
+  border-style: dashed;
+  color: var(--color-ink-muted);
+}
+
+.vx-muted {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.vx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.vx-table th,
+.vx-table td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+.vx-table td.vx-cell-error {
+  background: var(--color-mark-wash);
+  color: var(--color-mark);
+}
+
+.vx-table td.vx-cell-focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

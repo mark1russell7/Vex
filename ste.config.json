@@ -19,7 +19,8 @@
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "docs/archive/**",
-    "docs/research/**"
+    "docs/research/**",
+    "packages/site/src/content/docs/spec/**"
   ],
   "technicalNouns": [
     "adapter",

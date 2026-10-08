@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/package",
+  "name": "@vex/site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "node scripts/gen-spec.mjs",
+    "report": "node scripts/test-report.mjs",
+    "dev": "node scripts/gen-spec.mjs && astro dev",
+    "build": "node scripts/gen-spec.mjs && astro build",
+    "preview": "astro preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@mark1russell7/cue": "github:mark1russell7/cue",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@astrojs/react": "^7.0.1",
+    "@astrojs/starlight": "^0.42.6",
+    "@fontsource-variable/atkinson-hyperlegible-mono": "^5.3.0",
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
+    "@vex/core": "workspace:*",
+    "@vex/domains": "workspace:*",
+    "@vex/testkit": "workspace:*",
+    "astro": "^7.3.8",
+    "fast-check": "^4.10.2",
+    "motion": "^14.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}

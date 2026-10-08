@@ -1,12 +1,27 @@
 {
-  "name": "vex",
-  "version": "0.1.0",
+  "$schema": "https://json.schemastore.org/package",
+  "name": "vex-monorepo",
   "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
-    "test": "vitest"
+    "package": "tsx packages/cli/src/index.ts package",
+    "template": "tsx packages/cli/src/index.ts repo",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "lint": "oxlint",
+    "lint:ste": "ste-lint",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm lint:ste"
   },
   "devDependencies": {
-    "@types/node": "^24.5.2",
-    "vitest": "^3.2.4"
+    "@mark1russell7/cue": "github:mark1russell7/cue",
+    "@mark1russell7/ste-lint": "github:mark1russell7/ste-lint",
+    "oxlint": "^1.87.0",
+    "oxlint-tsgolint": "^7.0.2003",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }

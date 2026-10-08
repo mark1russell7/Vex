@@ -1,0 +1,3 @@
+work/
+.stryker-tmp/
+stryker-setup-*.js

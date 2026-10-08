@@ -55,11 +55,11 @@ interface VexError {
 
 Inside the interpreter, each node gives a `Result`. At the boundary, `at(k)` changes the `Result` into an `Optional`. Thus a caller that needs only the value gets `some(value)` or `none`. A caller that needs the reason uses `result(k)`.
 
-```ts
+```ts doctest
 const quotient = root.from("position")._.divide(0);
 
-quotient.at("A");     // { tag: "none" }
-quotient.result("A"); // { ok: false, error: { code: "#NUM!", kind: "invalid-value", ... } }
+quotient.at("A");     // => { tag: "none" }
+quotient.result("A"); // => { ok: false, error: { code: "#NUM!", kind: "invalid-value", ... } }
 ```
 
 ## Errors go up the tree

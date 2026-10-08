@@ -95,3 +95,24 @@ describe("axes (AXIS.*)", () => {
     expect(error(axisTargets(three, at, { t: "neighbors", n: 4 })).kind).toBe("no-grid");
   });
 });
+
+describe("the edges of the spaces", () => {
+  it("a key that is not in the space has no coordinates and no record", () => {
+    const a = space.array([10, 20]);
+    expect(a.coords("2")).toBeUndefined();
+    expect(a.get("x")).toBeUndefined();
+    expect(a.keyAt([1])).toBe("1");
+    expect(a.keyAt([1, 0])).toBeUndefined();
+    const g = space.grid([[1, 2]]);
+    expect(g.coords("1,0")).toBeUndefined();
+    expect(g.keyAt([0])).toBeUndefined();
+    expect(g.keyAt([0, -1])).toBeUndefined();
+    const r = space.record({ A: 1 });
+    expect(r.keyAt([0])).toBeUndefined();
+  });
+
+  it("NAV.OTHER.PAIR: other goes both ways in a pair", () => {
+    const pair = space.record({ A: 1, B: 2 });
+    expect(value(applyMove(pair, { origin: "B", focus: "B" }, other))).toBe("A");
+  });
+});

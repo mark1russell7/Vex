@@ -1,0 +1,21 @@
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
+
+const work = (p: string): string => fileURLToPath(new URL(`./work/${p}`, import.meta.url));
+
+// The tests of the three packages in work/, run by Vitest 4.1. The aliases make "vitest" the Vitest of this
+// lane, and "@vex/core" the copy that Stryker mutates.
+export default defineConfig({
+  resolve: {
+    alias: {
+      vitest: fileURLToPath(import.meta.resolve("vitest")),
+      "@vex/core": work("core/index.ts"),
+      "@vex/domains": work("domains/index.ts"),
+    },
+  },
+  test: {
+    include: ["work/**/*.test.ts"],
+    exclude: ["work/core/golden.test.ts", "work/core/spec-coverage.test.ts"],
+    setupFiles: [work("testkit/fc-setup.ts")],
+  },
+});

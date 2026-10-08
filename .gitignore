@@ -100,3 +100,4 @@ reports/
 .doctest/
 .astro/
 .playwright-mcp/
+build/

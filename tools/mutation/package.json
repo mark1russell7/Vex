@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/package",
+  "name": "@vex/mutation",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The mutation lane: Stryker with Vitest 4.1 until Stryker supports Vitest 5 (docs/REVIEW.md §8.6).",
+  "type": "module",
+  "scripts": {
+    "mutation": "node prepare.mjs && stryker run stryker.config.json"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "vitest": "4.1.11"
+  },
+  "dependencies": {
+    "@vex/domains": "workspace:*",
+    "@vex/testkit": "workspace:*",
+    "fast-check": "^4.10.2"
+  }
+}

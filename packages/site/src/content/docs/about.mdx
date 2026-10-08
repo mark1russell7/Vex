@@ -9,6 +9,8 @@ The site uses Astro and Starlight. The widgets are React islands, and each widge
 
 GitHub Actions builds the site on each push to `main`. Before the build, the workflow runs the tests and writes a report. The specification page reads the report and shows the status of the tests of each requirement. Smoke tests open each page in Chromium, and a console error makes CI fail.
 
+The code samples are tests too. CI compiles each sample that has the mark `doctest`, and compares each value in a `// =>` comment with the real value. A line with the comment `// type error` must not compile: if it compiles, CI fails.
+
 The source is on GitHub: [github.com/mark1russell7/Vex](https://github.com/mark1russell7/Vex).
 
 ## Writing style

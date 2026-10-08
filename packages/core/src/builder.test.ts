@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { vex } from "./builder.ts";
 import { defineDomain } from "./domain.ts";
 import { evaluate } from "./evaluate.ts";
+import { ok } from "./result.ts";
 import { isSome, type Optional, type Result } from "./result.ts";
 import { space } from "./space.ts";
 import { error, Pt, PtDomain, value } from "./test-support.ts";
@@ -211,5 +212,45 @@ describe("the types of the builder (TYPE.*)", () => {
   it("TYPE.NO-ANY: no value type is any (V-012)", () => {
     expectTypeOf(pair.from("position")._.add("size").at("A")).not.toBeAny();
     expectTypeOf(pair.from("position")._.add("size").at("A")).toEqualTypeOf<Optional<Pt>>();
+  });
+});
+
+describe("the other members of the builder", () => {
+  const four = vex(PtDomain, Num).over(space.record({ A, B, C, D }));
+  const weights = four.start(0).each((t) => t.from("weight"));
+
+  it("value() and explain() evaluate at a key", () => {
+    const c = four.from("weight");
+    expect(optionalValue(c.value("B"))).toBe(3);
+    expect(c.explain("B").events.map((e) => e.label)).toEqual(["weight"]);
+  });
+
+  it("index() and offset() move the address of the later references", () => {
+    expect(optionalValue(four.start(0).index(2).from("weight").at("A"))).toBe(5);
+    const row = vex(Num).over(space.array([{ n: 1 }, { n: 2 }, { n: 4 }]));
+    expect(row.start(0).offset(1).from("n").all().values()).toEqual([2, 4]);
+  });
+
+  it("each() and the reductions of a list chain", () => {
+    expect(weights.program.tag).toBe("let");
+    expect(optionalValue(weights.sum().at("A"))).toBe(17);
+    expect(optionalValue(weights.mean().at("A"))).toBe(4.25);
+    expect(optionalValue(weights.max().at("A"))).toBe(7);
+    expect(optionalValue(weights.values().at("A"))).toEqual([2, 3, 5, 7]);
+    expect(optionalValue(weights.first().at("A"))).toBe(2);
+    expect(optionalValue(weights.reduce("plus", { strict: true }).at("A"))).toBe(17);
+    const flags = four.start(0).each((t) => t.from("position")._.anyNonPositive());
+    expect(optionalValue(flags.any().at("A"))).toBe(true);
+    expect(optionalValue(flags.all().at("A"))).toBe(false);
+    expect(optionalValue(flags.none().at("A"))).toBe(false);
+  });
+
+  it("withOptions() gives the free functions and the extension handlers to the interpreter", () => {
+    const root = vex(Num)
+      .withOptions({ fns: { half: (n: unknown) => Number(n) / 2 }, extensions: { seven: () => ok(7) } })
+      .over(space.record({ A }));
+    // A free function has no type in the chain, so the test calls it through the untyped proxy.
+    const untyped = root.from("weight")._ as unknown as Readonly<Record<string, () => { result(k: "A"): Result<unknown> }>>;
+    expect(untyped["half"]?.().result("A")).toEqual(ok(1));
   });
 });

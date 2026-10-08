@@ -7,8 +7,9 @@
     "declaration": false,
     "declarationMap": false,
     "isolatedDeclarations": false,
+    "rootDir": "${configDir}",
     "types": ["node"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "bench/**/*"],
   "exclude": []
 }

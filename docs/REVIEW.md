@@ -824,6 +824,50 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 
 ---
 
+## 14. Execution record
+
+*Updated: 2026-10-08.* This section records what the work did, and where the work is different from the plan.
+
+### 14.1 Status of the phases
+
+| Phase | Status | Evidence |
+|---|---|---|
+| P0 Migrate | Done | Commit `890e6a3`. CI is green on Node 22, 24 and 26. |
+| P1 Kernel | Done | Commit `0357f95` |
+| P2 Surface | Done | Commits `749a3e1` and `1c9a17a`. `@vex/legacy` is gone. |
+| P3 Assurance | Done, with the changes of §14.2 | Commits `7e76f54` and `84234e8`, and the commit of this section |
+| P4 Site | Done | Commits `89161c6` and `a1c7cfe`. The site is live at [mark1russell7.github.io/Vex](https://mark1russell7.github.io/Vex/). |
+| P5 Interop | In progress | §14.4 |
+
+### 14.2 Changes to the plan
+
+| Plan | What the work did | Reason |
+|---|---|---|
+| §6.2: the builder simplifies addresses, for example `other` twice is empty | The builder keeps each move. | A simplification hides errors. In a space with three keys, `[other, other]` gives `#REF!`, but the empty address gives a value. |
+| §8.2 L2: case files and a ledger | Each test title names its requirement IDs. `spec-coverage.test.ts` checks that each ID has a test, and that each ID of a test is in the spec. | The test titles do the same job with less code. |
+| §8.2 L3: doc tests | A code block with the meta word `doctest` is a test. `// =>` compares a value, `// :` compares a type, and `// type error` adds `@ts-expect-error`. | The doc tests found a defect in the README sample: it gave the class `Vec2` where the domain `Vec2Domain` is necessary. |
+| §8.2 L4: TSTyche for negative type tests | The lines with `// type error` in the doc tests, and `expectTypeOf` in the unit tests | TSTyche needs the compiler API, and TS 7.0 has no compiler API. |
+| §8.2 L6: golden traces | `formatTrace` gives a text form of a trace. Four programs have a golden IR file and a golden trace file. | None |
+| §8.6: Stryker in `tools/mutation` with Vitest 4.1 | The same, and the lane copies the sources to `tools/mutation/work/` first. | The Vitest runner of Stryker loads the Vitest of its working folder. At the root, that Vitest is version 5, and the scores are false. |
+| §8.2 L1: coverage of `@vex/core` | The root `vitest.config.ts` starts the tests of three packages and measures `@vex/core`. | The property tests of `@vex/testkit` find many paths of the core. |
+
+### 14.3 Measurements
+
+- Coverage of `@vex/core`: statements 99.9 %, branches 99.4 %, functions 100 %, lines 100 %. The thresholds are 98, 96, 98 and 98.
+- Mutation score of `@vex/core`: 81.3 %. The tests found 1544 mutants, and 299 mutants survived. The target is 90 %. Most surviving mutants change an error message or a condition.
+- Speed on Node 25 with 60 boxes: the nearest-box program is approximately 21 times slower than hand-written loops. One step of the Game of Life on a 16 by 16 grid is approximately 86 times slower. The `compile` item of P5 addresses this.
+- Tests: 161 unit and property tests, 15 doc tests and 30 browser smoke tests.
+
+### 14.4 Open items
+
+- P5 done: the tsdown build, the package check (publint, attw and a program against the tarballs), Changesets, and a release workflow that the owner starts by hand.
+- P5 open: `sheet()` with `#CYCLE!`, `compile` and the Graph layout pilot. The pilot uses the grid layout of Graph. The packed layout is an ordered fold, so it is not a good fit for Vex formulas.
+- The mutation score: tests for the error messages and the conditions that survive.
+- The owner decides these items, because they change other repositories or public names. The items are D9 (the name of the repository), D11 (the template fixes upstream) and D12 (the workspace `CLAUDE.md`). The shared Optional package and the first npm release are also decisions of the owner.
+- The research reports in `docs/research/` stay local. They contain local paths and the names of private repositories. The links to them in this document work only in a local copy.
+
+---
+
 ## Appendix A: Evidence from this review
 
 | Check | Result |

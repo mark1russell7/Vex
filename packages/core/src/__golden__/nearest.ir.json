@@ -1,0 +1,45 @@
+{
+  "tag": "app",
+  "op": "min",
+  "args": [
+    {
+      "tag": "let",
+      "bind": {
+        "$0": {
+          "tag": "ref",
+          "path": [
+            "position"
+          ]
+        }
+      },
+      "body": {
+        "tag": "each",
+        "axis": {
+          "t": "others"
+        },
+        "body": {
+          "tag": "app",
+          "op": "length",
+          "args": [
+            {
+              "tag": "app",
+              "op": "subtract",
+              "args": [
+                {
+                  "tag": "var",
+                  "name": "$0"
+                },
+                {
+                  "tag": "ref",
+                  "path": [
+                    "position"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

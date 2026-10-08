@@ -29,8 +29,8 @@ The program reads `position` at the key Z. The space has the keys A, B, C and D,
 
 The typed builder accepts only the keys of the space. `root.of("Z", "position")`, `.to("Z")` and `.at("Z")` do not compile. `other()` exists only on a chain over a pair. Thus the program above is possible only as IR, for example from JSON.
 
-```ts
-const root = vex(Vec2Domain).over(space.record({ A: boxA, B: boxB, C: boxC }));
+```ts doctest
+const root = vex(Vec2Domain).over(space.record({ A, B, C }));
 
 root.from("position")._.add(root.of("Z", "size")); // type error: "Z" is not a key
 root.from("position").other();                     // type error: the space is not a pair

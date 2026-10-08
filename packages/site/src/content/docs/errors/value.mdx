@@ -26,7 +26,7 @@ The program adds the boolean `true` to a position. The op `add` of `Vec2Domain` 
 
 `._` lists the ops with the parameter types of each op. Thus `._.add(true)` does not compile. A number is a valid argument only for an op that declares `liftScalar`.
 
-```ts
+```ts doctest
 root.from("position")._.add(1);    // correct: add lifts 1 to the vector (1, 1)
 root.from("position")._.add(true); // type error: a boolean is not a Vec2
 root.from("position")._.dot(5);    // type error: dot does not lift numbers

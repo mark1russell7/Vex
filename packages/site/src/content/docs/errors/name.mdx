@@ -25,7 +25,7 @@ The program applies the op `explode` to a position. `Vec2Domain` accepts the pos
 
 `._` lists only the ops of the domain of the current value. Thus `._.explode()` does not compile. After an op gives a value that no domain of the chain accepts, the chain has no `._`.
 
-```ts
+```ts doctest
 root.from("position")._.explode();             // type error: Vec2 has no op "explode"
 root.from("position")._.length()._.halve();    // type error: halve is not an op of Num
 ```

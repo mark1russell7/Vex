@@ -1,0 +1,7 @@
+      position @A = Pt(0, 0)
+      size @A = Pt(2, 2)
+    add @A = Pt(2, 2)
+    position @A -> B = Pt(3, 4)
+  subtract @A = Pt(-1, -2)
+anyNonPositive @A = true
+result = true

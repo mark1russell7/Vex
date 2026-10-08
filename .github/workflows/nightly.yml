@@ -1,0 +1,127 @@
+name: Nightly
+
+# The slow checks (docs/REVIEW.md §8.2 and §9.1): 10000 runs of each property, the mutation lane, the speed lane,
+# the next TypeScript and the links of the docs. Each job keeps its report as an artifact.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  properties:
+    name: properties (10000 runs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The setup prints the seed. To repeat a failure, set FC_SEED to that seed.
+      - run: pnpm --filter @vex/testkit run test
+        env:
+          FC_NUM_RUNS: "10000"
+
+  mutation:
+    name: mutation (Stryker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Stryker with Vitest 4.1, in tools/mutation, until Stryker supports Vitest 5
+      - run: pnpm --filter @vex/mutation run mutation
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          if-no-files-found: ignore
+
+  bench:
+    name: speed (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: mkdir -p reports && pnpm --filter @vex/core run bench | tee reports/bench.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bench-report
+          path: reports/bench.txt
+
+  typescript-next:
+    name: typescript@next
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # A failure here is an early warning, not a defect of Vex.
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck with the next TypeScript
+        run: |
+          for p in core domains testkit; do
+            for c in tsconfig.json tsconfig.test.json; do
+              pnpm dlx --package=typescript@next tsc -p "packages/$p/$c" --noEmit
+            done
+          done
+
+  links:
+    name: links of the docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # Only the web links: the relative links of the site pages resolve at build time.
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --scheme https --scheme http --max-retries 2 --accept "200..=299,403,429"
+            README.md "spec/**/*.md" "docs/*.md" "packages/*/README.md" "packages/site/src/content/**/*.mdx"
+          fail: true

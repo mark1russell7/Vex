@@ -9,18 +9,19 @@ Vex has three packages. `@vex/core` has the kernel and the builder, and it has n
 
 ## The builder
 
-```ts
+```ts doctest
 import { space, vex } from "@vex/core";
 import { NumDomain, Vec2Domain } from "@vex/domains";
 
 const root = vex(Vec2Domain, NumDomain).over(space.record({ A, B, C }));
 const nearest = root.from("position").others((e) => e._.subtract("position")._.length()).min();
 
-nearest.at("A");      // Optional<number>
-nearest.result("A");  // Result<number>: the value, or the error with its code
-nearest.explain("A"); // Trace: one event for each node
-nearest.all();        // Traversal: the result at each key
-nearest.program;      // Expr: the program as JSON data
+nearest.at("A");      // : Optional<number>
+nearest.result("A");  // : Result<number>
+nearest.explain("A"); // : Trace
+nearest.all();        // : Traversal<"A" | "B" | "C", number>
+nearest.program;      // : Expr
+nearest.at("A");      // => some(5)
 ```
 
 `vex(...domains)` gives the entry point for a list of domains. The interpreter finds the op of a value in the first domain that accepts the value. `vex(...).withOptions({ fns, extensions })` adds free functions and extension handlers.

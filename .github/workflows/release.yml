@@ -1,0 +1,49 @@
+name: Release
+
+# Changesets: this workflow opens a pull request with the new versions and change logs. After a merge of that
+# pull request, the next start publishes the packages to npm with provenance.
+#
+# The owner starts it by hand. Before the first release, the owner does these steps (docs/REVIEW.md §9.1, D8):
+# 1. Set the package names and remove "private": true from @vex/core, @vex/domains and @vex/testkit.
+# 2. On npmjs.com, add this repository and this workflow as the trusted publisher of each package, with direct
+#    publishing (Changesets cannot stage a release at this time).
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      # The version pull request: a branch and a pull request
+      contents: write
+      pull-requests: write
+      # npm trusted publishing (OIDC) and provenance
+      id-token: write
+    steps:
+      # The Changesets action pushes the version branch, so the checkout keeps its credentials.
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm check:packages
+      - uses: changesets/action@v2
+        with:
+          version: pnpm exec changeset version
+          publish: pnpm exec changeset publish
+          title: Version the packages
+          commit: Version the packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defineDomain, findMethod, resolveOp, type OpTable } from "./domain.ts";
+import { defineDomain, domainOf, findMethod, liftsAt, resolveOp, type OpTable } from "./domain.ts";
 
 class Thing {
   readonly n: number;
@@ -37,5 +37,26 @@ describe("domains (DOMAIN.*)", () => {
     expect(resolveOp(d, new Thing(1), "toString")).toBeUndefined();
     expect(resolveOp(d, new Thing(1), "constructor")).toBeUndefined();
     expect(findMethod(new Thing(1), "n")).toBeUndefined();
+  });
+});
+
+describe("the edges of op lookup", () => {
+  it("findMethod gives nothing for values without methods and for prototype names", () => {
+    expect(findMethod(null, "twice")).toBeUndefined();
+    expect(findMethod(undefined, "twice")).toBeUndefined();
+    expect(findMethod(3, "toFixed")).toBeUndefined();
+    expect(findMethod(new Thing(1), "__proto__")).toBeUndefined();
+    expect(findMethod(new Thing(1), "")).toBeUndefined();
+    expect(findMethod(new Thing(1), "twice")).toBeTypeOf("function");
+  });
+
+  it("domainOf gives the first domain that accepts a value, and liftsAt reads a flag list", () => {
+    const d = defineDomain({ name: "Thing", is: (u: unknown): u is Thing => u instanceof Thing, ops: {} });
+    expect(domainOf([d], new Thing(1))).toBe(d);
+    expect(domainOf([d], 1)).toBeUndefined();
+    expect(liftsAt(true, 3)).toBe(true);
+    expect(liftsAt([false, true], 1)).toBe(true);
+    expect(liftsAt([false, true], 0)).toBe(false);
+    expect(liftsAt(undefined, 0)).toBe(false);
   });
 });

@@ -19,8 +19,14 @@ export const vexList = <T>(items: readonly ListItem<T>[]): VexList<T> => Object.
 export const isVexList = (u: unknown): u is VexList =>
   typeof u === "object" && u !== null && (u as { kind?: unknown }).kind === "vex.list" && Array.isArray((u as { items?: unknown }).items);
 
+/** The name of a core list op. */
+export type ListOp = "count" | "sum" | "min" | "max" | "mean" | "any" | "all" | "none" | "values" | "keys" | "reduce" | "first" | "errors";
+
 /** The names of the core list ops. They apply when the first argument is a list. */
-export const LIST_OPS: ReadonlySet<string> = new Set(["count", "sum", "min", "max", "mean", "any", "all", "none", "values", "keys", "reduce", "first", "errors"]);
+export const LIST_OPS: ReadonlySet<string> = new Set<ListOp>(["count", "sum", "min", "max", "mean", "any", "all", "none", "values", "keys", "reduce", "first", "errors"]);
+
+/** This function tells if a name is the name of a core list op. */
+export const isListOp = (op: string): op is ListOp => LIST_OPS.has(op);
 
 /** The options of a list op. */
 export interface ListOptions {

@@ -57,63 +57,52 @@ class RecordSpace<K extends string, O> implements Space<K, O> {
 class ArraySpace<O> implements Space<ArrayKey, O> {
   readonly kind: SpaceKind = "array";
   readonly keys: readonly ArrayKey[];
-  readonly #items: readonly O[];
+  readonly #items: ReadonlyMap<string, O>;
 
   constructor(items: readonly O[]) {
-    this.#items = Object.freeze([...items]);
-    this.keys = Object.freeze(this.#items.map((_, i): ArrayKey => `${i}`));
+    const entries = items.map((item, i): [ArrayKey, O] => [`${i}`, item]);
+    this.keys = Object.freeze(entries.map(([k]) => k));
+    this.#items = new Map(entries);
   }
 
   has(k: string): k is ArrayKey {
-    return this.coords(k) !== undefined;
+    return this.#items.has(k);
   }
   get(k: string): O | undefined {
-    const c = this.coords(k);
-    return c === undefined ? undefined : this.#items[c[0] ?? -1];
+    return this.#items.get(k);
   }
   coords(k: string): readonly number[] | undefined {
-    if (!/^(0|[1-9][0-9]*)$/.test(k)) return undefined;
-    const i = Number(k);
-    return i < this.#items.length ? [i] : undefined;
+    return this.has(k) ? [Number(k)] : undefined;
   }
   keyAt(coords: readonly number[]): ArrayKey | undefined {
-    const [i] = coords;
-    return coords.length === 1 && i !== undefined && i >= 0 && i < this.#items.length ? `${i}` : undefined;
+    const k = coords.join(",");
+    return coords.length === 1 && this.has(k) ? k : undefined;
   }
 }
 
 class GridSpace<O> implements Space<GridKey, O> {
   readonly kind: SpaceKind = "grid";
   readonly keys: readonly GridKey[];
-  readonly #rows: readonly (readonly O[])[];
+  readonly #cells: ReadonlyMap<string, O>;
 
   constructor(rows: readonly (readonly O[])[]) {
-    this.#rows = Object.freeze(rows.map((r) => Object.freeze([...r])));
-    const keys: GridKey[] = [];
-    this.#rows.forEach((row, i) => row.forEach((_, j) => keys.push(`${i},${j}`)));
-    this.keys = Object.freeze(keys);
+    const entries = rows.flatMap((row, i) => row.map((cell, j): [GridKey, O] => [`${i},${j}`, cell]));
+    this.keys = Object.freeze(entries.map(([k]) => k));
+    this.#cells = new Map(entries);
   }
 
   has(k: string): k is GridKey {
-    return this.coords(k) !== undefined;
+    return this.#cells.has(k);
   }
   get(k: string): O | undefined {
-    const c = this.coords(k);
-    return c === undefined ? undefined : this.#rows[c[0] ?? -1]?.[c[1] ?? -1];
+    return this.#cells.get(k);
   }
   coords(k: string): readonly number[] | undefined {
-    const m = /^(0|[1-9][0-9]*),(0|[1-9][0-9]*)$/.exec(k);
-    if (m === null) return undefined;
-    const i = Number(m[1]);
-    const j = Number(m[2]);
-    const row = this.#rows[i];
-    return row !== undefined && j < row.length ? [i, j] : undefined;
+    return this.has(k) ? k.split(",").map(Number) : undefined;
   }
   keyAt(coords: readonly number[]): GridKey | undefined {
-    const [i, j] = coords;
-    if (coords.length !== 2 || i === undefined || j === undefined) return undefined;
-    const row = this.#rows[i];
-    return row !== undefined && j >= 0 && j < row.length ? `${i},${j}` : undefined;
+    const k = coords.join(",");
+    return coords.length === 2 && this.has(k) ? k : undefined;
   }
 }
 
@@ -153,6 +142,8 @@ export function applyMove(s: Space, at: Position, m: Move): Result<string> {
     case "other": {
       if (s.keys.length !== 2) return refError("not-a-pair", `"other" needs a space with 2 keys, but this space has ${s.keys.length}`);
       const [a, b] = s.keys;
+      // A pair has two keys, so `a` and `b` are defined.
+      /* v8 ignore next -- @preserve */
       return ok(at.focus === a ? (b ?? at.focus) : (a ?? at.focus));
     }
     case "offset": {
@@ -160,6 +151,8 @@ export function applyMove(s: Space, at: Position, m: Move): Result<string> {
       if (c === undefined || c.length !== m.d.length) {
         return refError("no-offset", `an offset of ${m.d.length} numbers is not valid in a ${s.kind} space`);
       }
+      // The lengths are equal, so each index of `c` is also an index of `m.d`.
+      /* v8 ignore next -- @preserve */
       const target = c.map((x, i) => x + (m.d[i] ?? 0));
       const k = s.keyAt(target);
       return k === undefined ? refError("out-of-bounds", `the offset [${m.d.join(",")}] from "${at.focus}" is outside the space`) : ok(k);
@@ -200,17 +193,14 @@ export function axisTargets(s: Space, at: Position, a: Exclude<Axis, { readonly 
       return r.ok ? ok([r.value]) : r;
     }
     case "neighbors": {
-      const c = s.coords(at.focus);
-      if (s.kind !== "grid" || c === undefined) {
-        return fail(vexError("no-grid", `"neighbors" needs a grid space, but this space is a ${s.kind}`, at));
-      }
+      if (s.kind !== "grid") return fail(vexError("no-grid", `"neighbors" needs a grid space, but this space is a ${s.kind}`, at));
       const deltas = a.n === 4 ? NEIGHBORS_4 : NEIGHBORS_8;
-      const keys: string[] = [];
-      for (const [di, dj] of deltas) {
-        const k = s.keyAt([(c[0] ?? 0) + di, (c[1] ?? 0) + dj]);
-        if (k !== undefined) keys.push(k);
-      }
-      return ok(keys);
+      return ok(
+        deltas.flatMap((d) => {
+          const r = applyMove(s, at, { t: "offset", d });
+          return r.ok ? [r.value] : [];
+        }),
+      );
     }
   }
 }

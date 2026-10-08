@@ -5,7 +5,8 @@ import { app, axes, each, ext, key, let_, lit, other, ref, rec, v, type Expr } f
 import { parse, serialize } from "./json.ts";
 import { isVexList } from "./list.ts";
 import { fail, ok } from "./result.ts";
-import { space } from "./space.ts";
+import { space, type Space } from "./space.ts";
+import { defineDomain } from "./domain.ts";
 import { error, Pt, PtDomain, value } from "./test-support.ts";
 import { vexError } from "./errors.ts";
 
@@ -299,5 +300,118 @@ describe("folds: explain, deps, JSON", () => {
     expect(error(serialize(e)).code).toBe("#VALUE!");
     expect(error(parse("{\"tag\":\"nope\"}")).code).toBe("#VALUE!");
     expect(error(parse("not json")).code).toBe("#VALUE!");
+  });
+
+  it("IR.JSON: a literal without a JSON form, and a domain literal without a decoder, give #VALUE!", () => {
+    expect(error(serialize(lit(() => 1))).code).toBe("#VALUE!");
+    const throwing = {
+      get x(): number {
+        throw new Error("no");
+      },
+    };
+    expect(error(serialize(lit(throwing))).code).toBe("#CALC!");
+    const text = value(serialize(lit(new Pt(1, 2)), [PtDomain]));
+    expect(error(parse(text)).message).toContain('no domain "Pt"');
+    expect(value(parse(value(serialize(lit({ a: [1, null, "s"] })))))).toEqual(lit({ a: [1, null, "s"] }));
+  });
+});
+
+describe("the edges of the interpreter", () => {
+  const s = space.record({ A, B });
+  const run = (e: Expr, extra: Partial<EvalOptions> = {}) => evaluate(e, at(s, "A", extra));
+  const pts = each(axes.all, ref("position"));
+  const nums = each(axes.all, ref("weight"));
+  const flags = each(axes.all, app("anyNonPositive", ref("position")));
+  const nothing = each(axes.where(axes.all, lit(false)), ref("weight"));
+
+  it("EVAL.TOTAL: a host space that throws gives #CALC!, not an exception", () => {
+    const broken: Space = {
+      kind: "record",
+      keys: ["A"],
+      has: (k: string): k is string => k === "A",
+      get: () => {
+        throw new Error("disk");
+      },
+      coords: () => undefined,
+      keyAt: () => undefined,
+    };
+    expect(error(evaluate(ref("position"), { space: broken, origin: "A" }))).toMatchObject({ code: "#CALC!", origin: "A" });
+  });
+
+  it("an extension kind without a handler gives #NAME?", () => {
+    expect(error(run(ext("sheet", null))).code).toBe("#NAME?");
+  });
+
+  it("a free function must be an own property of the options", () => {
+    expect(error(run(app("toString", lit(1)), { fns: {} })).code).toBe("#VALUE!");
+    expect(error(run(app("hasOwnProperty"), { fns: {} })).code).toBe("#NAME?");
+  });
+
+  it("CALL.PARAMS: boolean, string and any parameters, and arguments past the declared list", () => {
+    const Tagged = defineDomain({
+      name: "Tagged",
+      is: (u: unknown): u is Pt => u instanceof Pt,
+      ops: { label: { params: ["boolean", "string", "any"], fn: (p: Pt, b: boolean, t: string, x: unknown) => `${t}:${b}:${String(x)}:${p.x}` } },
+    });
+    const call = (...args: readonly Expr[]) => run(app("label", ref("position"), ...args), { domains: [Tagged] });
+    expect(value(call(lit(true), lit("t"), lit(1), lit("past")))).toBe("t:true:1:0");
+    expect(error(call(lit(1), lit("t"))).code).toBe("#VALUE!");
+    expect(error(call(lit(true), lit(2))).code).toBe("#VALUE!");
+    expect(value(run(app("scale", ref("position"), lit(2), lit("past"))))).toEqual(new Pt(0, 0));
+  });
+
+  it("CALL.LIFT: a fromScalar that throws gives #CALC!", () => {
+    const Lifty = defineDomain({
+      name: "Lifty",
+      is: (u: unknown): u is Pt => u instanceof Pt,
+      fromScalar: (): Pt => {
+        throw new Error("no lift");
+      },
+      ops: { add: { liftScalar: true } },
+    });
+    expect(error(run(app("add", ref("position"), lit(1)), { domains: [Lifty] })).code).toBe("#CALC!");
+  });
+
+  it("CALL.RESULT: a valid check that throws gives #CALC!", () => {
+    const Fussy = defineDomain({
+      name: "Fussy",
+      is: (u: unknown): u is Pt => u instanceof Pt,
+      valid: (): boolean => {
+        throw new Error("no check");
+      },
+      ops: { add: {} },
+    });
+    expect(error(run(app("add", ref("position"), ref("size")), { domains: [Fussy] })).code).toBe("#CALC!");
+  });
+
+  it("FORM.IF: a false condition takes the third argument, and a missing argument gives #VALUE!", () => {
+    expect(value(run(app("if", lit(false), lit(1), lit(2))))).toBe(2);
+    expect(error(run(app("if", lit(true)))).code).toBe("#VALUE!");
+    expect(error(run(app("and"))).code).toBe("#VALUE!");
+    expect(value(run(app("or", lit(false), lit(true))))).toBe(true);
+  });
+
+  it("LIST.KINDS: the list ops keys, errors, first, mean, max and none", () => {
+    const withError = each(axes.all, ref("missing"));
+    expect(value(run(app("keys", nums)))).toEqual(["A", "B"]);
+    expect(value(run(app("errors", withError)))).toMatchObject([{ code: "#N/A" }, { code: "#N/A" }]);
+    expect(value(run(app("first", nums)))).toBe(2);
+    expect(error(run(app("first", nothing))).code).toBe("#N/A");
+    expect(value(run(app("mean", nums)))).toBe(2.5);
+    expect(error(run(app("mean", nothing))).code).toBe("#N/A");
+    expect(error(run(app("mean", pts))).code).toBe("#VALUE!");
+    expect(error(run(app("max", pts))).code).toBe("#VALUE!");
+    expect(value(run(app("max", nums)))).toBe(3);
+    expect(value(run(app("all", flags)))).toBe(false);
+    expect(value(run(app("none", flags)))).toBe(false);
+    expect(error(run(app("all", nums))).code).toBe("#VALUE!");
+  });
+
+  it("LIST.EMPTY and reduce: the op name must be a string, and the values need the op", () => {
+    expect(error(run(app("reduce", pts, lit(1)))).code).toBe("#VALUE!");
+    expect(error(run(app("reduce", nums, lit("add")))).code).toBe("#NAME?");
+    expect(error(run(app("reduce", nothing, lit("subtract")))).code).toBe("#N/A");
+    expect(error(run(app("reduce", nothing, lit("nope")))).code).toBe("#N/A");
+    expect(value(run(app("reduce", pts, lit("subtract"))))).toEqual(new Pt(-3, -4));
   });
 });

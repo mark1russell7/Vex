@@ -31,12 +31,12 @@ Select a computed cell. The bar above the table shows the formula, and the field
 
 `all()` evaluates the chain at each key of the space. This is the start axis. The result is a traversal: one result for each key, with reductions over the results.
 
-```ts
+```ts doctest
 const corners = root.from("position")._.add("size").all();
 
-corners.values();                // [(7, 6), (10, 9), (16, 9), (11, 13)]
-corners.get("B");                // some((10, 9))
-root.from("weight").all().sum(); // some(11)
+corners.values();                // => [new Vec2(7, 6), new Vec2(10, 9), new Vec2(16, 9), new Vec2(11, 13)]
+corners.get("B");                // => some(new Vec2(10, 9))
+root.from("weight").all().sum(); // => some(11)
 ```
 
 A spreadsheet copies the formula into each cell of the column. Vex keeps one expression and evaluates it at each origin. The spec law **AXIS.EXTEND** says that the two give the same values. For an expression `e` that does not read the origin, the item at key `k` of `each(all, e)` equals `e` evaluated at the origin `k`.
@@ -45,7 +45,7 @@ A spreadsheet copies the formula into each cell of the column. Vex keeps one exp
 
 A bare field name is a relative reference. It reads at the focus, like `B2` in a formula that you copy down a column. `root.of("B", "position")` is an absolute reference. It reads at the key B from each origin, like `$B$2`.
 
-```ts
+```ts doctest
 root.from("position")._.add("size")           // relative: this row
   ._.subtract(root.of("B", "position"));      // absolute: the row B
 ```
@@ -60,14 +60,15 @@ Only a bare string is a field name. For a string value, use `root.lit("text")`. 
 
 A record space has names as keys, so it has no "row above". An array space and a grid space have positions. There, the move `offset` is the relative reference of the R1C1 style:
 
-```ts
+```ts doctest
 const rows = space.array([{ v: 1 }, { v: 2 }, { v: 4 }]);
 const root = vex(NumDomain).over(rows);
 
 // v minus the v of the row above: R[0]C - R[-1]C
 const delta = root.from("v").offset(-1)._.subtract("v");
 
-delta.all().items; // "0": #REF!, "1": 1, "2": 2
+delta.all().values();            // => [1, 2]
+delta.all().errors()[0]?.code;   // => "#REF!"
 ```
 
 `offset(-1)` moves the focus of the later field names. Thus the first `v` reads this row, and the second `v` reads the row above. The first row has no row above, so the result there is `#REF!`. A spreadsheet gives the same error for a reference above row 1.
@@ -80,7 +81,7 @@ A failed cell of a spreadsheet holds an error value, for example `#REF!` or `#N/
 
 `ifError(fallback)` is the Vex form of `IFERROR`. It gives the value of the chain, or the fallback when the chain gives an error.
 
-```ts
+```ts doctest
 root.from("position")._.divide(0)  // #NUM! at each key
   .ifError(root.from("position")); // the position at each key
 ```

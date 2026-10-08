@@ -10,18 +10,30 @@
   "scripts": {
     "package": "tsx packages/cli/src/index.ts package",
     "template": "tsx packages/cli/src/index.ts repo",
+    "build": "pnpm --filter @vex/core --filter @vex/domains --filter @vex/testkit run build",
+    "check:packages": "pnpm build && node scripts/check-packages.mjs",
+    "changeset": "changeset",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",
+    "test:coverage": "vitest run --coverage",
+    "test:docs": "pnpm --filter @vex/site run test:docs",
     "lint": "oxlint",
     "lint:ste": "ste-lint",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm lint:ste"
+    "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm test && pnpm test:docs && pnpm lint:ste"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@arethetypeswrong/core": "^0.18.5",
+    "@changesets/cli": "^3.0.3",
     "@mark1russell7/cue": "github:mark1russell7/cue",
     "@mark1russell7/ste-lint": "github:mark1russell7/ste-lint",
+    "@vitest/coverage-v8": "^5.0.3",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2003",
+    "publint": "^0.3.25",
+    "tsdown": "^0.23.0",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }

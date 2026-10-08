@@ -1,0 +1,41 @@
+{
+  "tag": "app",
+  "op": "anyNonPositive",
+  "args": [
+    {
+      "tag": "app",
+      "op": "subtract",
+      "args": [
+        {
+          "tag": "app",
+          "op": "add",
+          "args": [
+            {
+              "tag": "ref",
+              "path": [
+                "position"
+              ]
+            },
+            {
+              "tag": "ref",
+              "path": [
+                "size"
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "ref",
+          "path": [
+            "position"
+          ],
+          "at": [
+            {
+              "t": "other"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

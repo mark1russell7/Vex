@@ -36,6 +36,8 @@
       {
         "assertFunctionNames": [
           "expect",
+          "expectGolden",
+          "bench.compare",
           "expectTypeOf"
         ]
       }

@@ -4,14 +4,18 @@ Vex is a TypeScript library for typed spreadsheet formulas over domain objects.
 
 A Vex program runs at one position in a collection of records. It reads fields relative to that position, combines them with domain operations, and gives a total result. A failure does not throw. It gives an error value that tells you what went wrong. Axes lift one program to all positions, or to relations between positions.
 
-```ts
-const separated = vex(Vec2)
+```ts doctest
+import { space, vex } from "@vex/core";
+import { Vec2Domain } from "@vex/domains";
+
+const separated = vex(Vec2Domain)
   .over(space.record({ A, B }))
   .from("position")._.add("size")
   .other()._.subtract("position")
   ._.anyNonPositive();
 
-separated.at("A");   // Optional<boolean>
+separated.at("A"); // : Optional<boolean>
+separated.at("A"); // => { tag: "some", value: false }
 separated.explain("A"); // a trace of each step
 ```
 
@@ -30,17 +34,22 @@ Vex 1.0 is in development. The specification is in [`spec/README.md`](./spec/REA
 
 ```sh
 pnpm install
-pnpm typecheck     # the source and the tests of each package
-pnpm test          # the tests of each package
-pnpm lint          # Oxlint with type-aware rules
-pnpm lint:ste      # the writing rules
-pnpm package add <name> --preset=ts   # make a new package
+pnpm typecheck       # the source and the tests of each package
+pnpm test            # the tests of each package
+pnpm test:coverage   # the coverage of @vex/core, with thresholds
+pnpm test:docs       # the code blocks of the docs with the meta word "doctest"
+pnpm lint            # Oxlint with type-aware rules
+pnpm lint:ste        # the writing rules
+pnpm check           # each of the commands above
+pnpm --filter @vex/core run bench          # the speed lane (report only)
+pnpm --filter @vex/mutation run mutation   # the mutation lane (Stryker)
+pnpm package add <name> --preset=ts        # make a new package
 ```
 
 ## Documents
 
 - [`docs/REVIEW.md`](./docs/REVIEW.md): the review, the target architecture and the plan
-- [`docs/research/`](./docs/research/README.md): the research reports of the review
+- `docs/research/`: the research reports of the review. They contain local paths, so they stay out of the repository.
 - [`docs/archive/`](./docs/archive): the July 2026 audit and the old v0.9 spec
 
 ## Writing style

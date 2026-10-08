@@ -1,7 +1,7 @@
 import { liftsAt, resolveOp, type AnyDomain, type ParamKind, type ResolvedOp } from "./domain.ts";
-import { vexError, type ErrorKind, type VexError } from "./errors.ts";
+import { formatError, vexError, type ErrorKind, type VexError } from "./errors.ts";
 import { children, type Axis, type Expr, type ExprOf } from "./ir.ts";
-import { isVexList, LIST_OPS, vexList, type ListItem, type ListOptions, type VexList } from "./list.ts";
+import { isListOp, isVexList, vexList, type ListItem, type ListOp, type ListOptions, type VexList } from "./list.ts";
 import { fail, ok, type Result } from "./result.ts";
 import { axisTargets, resolveAddr, type Position, type Space } from "./space.ts";
 import type { Read, Trace, TraceEvent, TraceSink } from "./trace.ts";
@@ -44,8 +44,13 @@ interface Frame {
   readonly env: Env;
 }
 
+/** The name of a special form. */
+export type SpecialForm = "if" | "and" | "or" | "ifError";
+
 /** The names of the special forms. Their arguments are not evaluated before the call. */
-export const SPECIAL_FORMS: ReadonlySet<string> = new Set(["if", "and", "or", "ifError"]);
+export const SPECIAL_FORMS: ReadonlySet<string> = new Set<SpecialForm>(["if", "and", "or", "ifError"]);
+
+const isSpecialForm = (op: string): op is SpecialForm => SPECIAL_FORMS.has(op);
 
 /** This function evaluates an expression at the origin of a space. It does not throw. */
 export function evaluate(expr: Expr, opts: EvalOptions): Result<unknown> {
@@ -116,12 +121,9 @@ class Interpreter {
       }
       case "let": {
         const env = new Map(f.env);
-        const names = Object.keys(e.bind);
-        names.forEach((name, i) => {
-          const be = e.bind[name];
-          if (be !== undefined) env.set(name, this.#ev(be, f, [...path, i]));
-        });
-        const r = this.#ev(e.body, { pos: f.pos, env }, [...path, names.length]);
+        const binds = Object.entries(e.bind);
+        binds.forEach(([name, be], i) => env.set(name, this.#ev(be, f, [...path, i])));
+        const r = this.#ev(e.body, { pos: f.pos, env }, [...path, binds.length]);
         return this.#emit(e, f, path, r);
       }
       case "rec":
@@ -160,10 +162,9 @@ class Interpreter {
     if (value === undefined || value === null) {
       return this.#emit(e, f, path, missing(label === "" ? "(record)" : label), [{ key, path: e.path, ok: false }]);
     }
-    for (let i = 0; i < e.path.length; i++) {
-      const seg = e.path[i] ?? "";
+    for (const [i, seg] of e.path.entries()) {
       const at = e.path.slice(0, i + 1).join(".");
-      if ((typeof value !== "object" && typeof value !== "function") || value === null || !isFieldName(seg)) {
+      if ((typeof value !== "object" && typeof value !== "function") || !isFieldName(seg)) {
         return this.#emit(e, f, path, missing(at), [{ key, path: e.path, ok: false }]);
       }
       try {
@@ -184,9 +185,9 @@ class Interpreter {
   #all(exprs: readonly Expr[], f: Frame, path: readonly number[], what: string): Result<readonly unknown[]> {
     const results = exprs.map((x, i) => this.#ev(x, f, [...path, i]));
     const errors = results.flatMap((r) => (r.ok ? [] : [r.error]));
-    if (errors.length === 1 && errors[0] !== undefined) return fail(errors[0]);
-    if (errors.length > 1) return this.#err("args", `${errors.length} ${what} failed`, f, path, { causes: errors });
-    return ok(results.map((r) => (r.ok ? r.value : undefined)));
+    const [first] = errors;
+    if (first === undefined) return ok(results.map((r) => (r.ok ? r.value : undefined)));
+    return errors.length === 1 ? fail(first) : this.#err("args", `${errors.length} ${what} failed`, f, path, { causes: errors });
   }
 
   #rec(e: ExprOf<"rec">, f: Frame, path: readonly number[]): Result<unknown> {
@@ -247,13 +248,13 @@ class Interpreter {
   }
 
   #app(e: ExprOf<"app">, f: Frame, path: readonly number[]): Result<unknown> {
-    if (SPECIAL_FORMS.has(e.op)) return this.#special(e, f, path);
+    if (isSpecialForm(e.op)) return this.#special(e, e.op, f, path);
     const args = this.#all(e.args, f, path, "arguments");
     if (!args.ok) return args;
     const values = args.value;
     const self = values[0];
 
-    if (isVexList(self) && LIST_OPS.has(e.op)) return this.#listOp(e.op, self, values.slice(1), f, path);
+    if (isVexList(self) && isListOp(e.op)) return this.#listOp(e.op, self, values.slice(1), f, path);
 
     let accepted: AnyDomain | undefined;
     if (values.length > 0) {
@@ -304,12 +305,12 @@ class Interpreter {
   }
 
   /** This method checks the value that an op gave: no `undefined`, finite numbers, and valid domain values. */
-  #checkResult(r: Result<unknown>, f: Frame, path: readonly number[], op?: string): Result<unknown> {
+  #checkResult(r: Result<unknown>, f: Frame, path: readonly number[], op: string): Result<unknown> {
     if (!r.ok) return r;
     const value = r.value;
-    const extra = op === undefined ? {} : { op };
-    if (value === undefined || value === null) return this.#err("undefined-result", `"${op ?? "the function"}" gave no value`, f, path, extra);
-    if (typeof value === "number" && !Number.isFinite(value)) return this.#err("not-finite", `"${op ?? "the function"}" gave ${value}`, f, path, extra);
+    const extra = { op };
+    if (value === undefined || value === null) return this.#err("undefined-result", `"${op}" gave no value`, f, path, extra);
+    if (typeof value === "number" && !Number.isFinite(value)) return this.#err("not-finite", `"${op}" gave ${value}`, f, path, extra);
     const d = this.#domains.find((dom) => safeIs(dom, value));
     if (d?.valid !== undefined) {
       let valid: boolean;
@@ -318,22 +319,22 @@ class Interpreter {
       } catch (thrown) {
         return this.#err("threw", `the "valid" check of "${d.name}" threw an exception`, f, path, { ...extra, thrown });
       }
-      if (!valid) return this.#err("invalid-value", `"${op ?? "the function"}" gave a value that is not a valid ${d.name}`, f, path, extra);
+      if (!valid) return this.#err("invalid-value", `"${op}" gave a value that is not a valid ${d.name}`, f, path, extra);
     }
     return r;
   }
 
-  #special(e: ExprOf<"app">, f: Frame, path: readonly number[]): Result<unknown> {
+  #special(e: ExprOf<"app">, op: SpecialForm, f: Frame, path: readonly number[]): Result<unknown> {
     const arg = (i: number): Result<unknown> => {
       const x = e.args[i];
-      return x === undefined ? this.#err("bad-expression", `"${e.op}" needs argument ${i + 1}`, f, path, { op: e.op }) : this.#ev(x, f, [...path, i]);
+      return x === undefined ? this.#err("bad-expression", `"${op}" needs argument ${i + 1}`, f, path, { op: op }) : this.#ev(x, f, [...path, i]);
     };
     const bool = (i: number): Result<boolean> => {
       const r = arg(i);
       if (!r.ok) return r;
-      return typeof r.value === "boolean" ? ok(r.value) : this.#err("kind-mismatch", `argument ${i + 1} of "${e.op}" is a ${describeType(r.value)}, not a boolean`, f, path, { op: e.op });
+      return typeof r.value === "boolean" ? ok(r.value) : this.#err("kind-mismatch", `argument ${i + 1} of "${op}" is a ${describeType(r.value)}, not a boolean`, f, path, { op: op });
     };
-    switch (e.op) {
+    switch (op) {
       case "if": {
         const c = bool(0);
         if (!c.ok) return c;
@@ -341,24 +342,22 @@ class Interpreter {
       }
       case "and":
       case "or": {
-        if (e.args.length === 0) return this.#err("bad-expression", `"${e.op}" needs at least 1 argument`, f, path, { op: e.op });
+        if (e.args.length === 0) return this.#err("bad-expression", `"${op}" needs at least 1 argument`, f, path, { op: op });
         for (let i = 0; i < e.args.length; i++) {
           const b = bool(i);
           if (!b.ok) return b;
-          if (e.op === "and" ? !b.value : b.value) return ok(b.value);
+          if (op === "and" ? !b.value : b.value) return ok(b.value);
         }
-        return ok(e.op === "and");
+        return ok(op === "and");
       }
       case "ifError": {
         const first = arg(0);
         return first.ok ? first : arg(1);
       }
-      default:
-        return this.#err("unknown-op", `"${e.op}" is not a special form`, f, path, { op: e.op });
     }
   }
 
-  #listOp(op: string, list: VexList, rest: readonly unknown[], f: Frame, path: readonly number[]): Result<unknown> {
+  #listOp(op: ListOp, list: VexList, rest: readonly unknown[], f: Frame, path: readonly number[]): Result<unknown> {
     const optsArg = op === "reduce" ? rest[1] : rest[0];
     const strict = isOptions(optsArg) && optsArg.strict === true;
     const firstError = list.items.find((it) => !it.result.ok)?.result;
@@ -398,9 +397,7 @@ class Interpreter {
         const n = numbers();
         if (!n.ok) return n;
         if (n.value.length === 0) return empty();
-        let best = n.value[0] ?? 0;
-        for (const x of n.value) best = op === "min" ? Math.min(best, x) : Math.max(best, x);
-        return ok(best);
+        return ok(n.value.reduce((best, x) => (op === "min" ? Math.min(best, x) : Math.max(best, x))));
       }
       case "any":
       case "all":
@@ -413,8 +410,6 @@ class Interpreter {
       }
       case "reduce":
         return this.#reduce(rest[0], okValues, f, path);
-      default:
-        return this.#err("unknown-op", `"${op}" is not a list op`, f, path, { op });
     }
   }
 
@@ -516,6 +511,31 @@ export function previewValue(u: unknown): string {
     // A value with cycles has no JSON form.
   }
   return describeType(u);
+}
+
+/**
+ * This function gives a text form of a trace. Each event has one line, in finish order. The indent of a line
+ * shows the depth of the node. A domain with `show` gives the text of its values. The golden tests compare this text.
+ */
+export function formatTrace(trace: Trace, domains: readonly AnyDomain[] = []): string {
+  const show = (u: unknown): string => {
+    if (isVexList(u)) return `[${u.items.map((it) => `${it.key}: ${result(it.result)}`).join(", ")}]`;
+    const d = domains.find((dom) => dom.show !== undefined && safeIs(dom, u));
+    try {
+      if (d?.show !== undefined) return d.show(u);
+    } catch {
+      // A show function that throws gives the default text.
+    }
+    return previewValue(u);
+  };
+  const result = (r: Result<unknown>): string => (r.ok ? show(r.value) : formatError(r.error));
+  const line = (e: TraceEvent): string => {
+    // A reference with an address reads at another key. The line names that key.
+    const moved = e.reads?.find((r) => r.key !== e.focus);
+    return `${"  ".repeat(e.path.length)}${e.label} @${moved === undefined ? e.focus : `${e.focus} -> ${moved.key}`} = ${result(e.result)}`;
+  };
+  const lines = trace.events.map(line);
+  return [...lines, `result = ${result(trace.result)}`, ""].join("\n");
 }
 
 /** This function gives the number of nodes of an expression. */

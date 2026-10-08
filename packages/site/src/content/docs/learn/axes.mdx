@@ -29,16 +29,18 @@ Each axis method of the builder takes a body function and an optional `{ where }
 
 Inside an axis, the focus is the target, and the origin stays the same. A value that the program binds outside the axis keeps its value. Thus a base value from the origin and a field of the target meet in one body.
 
-```ts
-root.from("position")                      // the base value, at the origin
-  .others((e) => e._.subtract("position")  // "position" reads at each target
+```ts doctest
+const nearest = root.from("position")          // the base value, at the origin
+  .others((e) => e._.subtract("position")      // "position" reads at each target
     ._.length())
-  .min();                                  // the distance to the nearest other box
+  .min();                                      // the distance to the nearest other box
+
+nearest.at("A"); // => some(5)
 ```
 
 The body function gets a chain `e` that starts with the base value. The builder binds the base value to a name before the axis. The IR shows it:
 
-```ts
+```ts doctest
 app("min",
   let_({ $0: ref("position") },
     each(axes.others,
@@ -65,12 +67,14 @@ At the origin A, the offsets are `(-4, -3)`, `(-11, -1)` and `(-2, -9)`. Their s
 
 The option `where` keeps only the targets where a test gives `true`. The test evaluates at each target, with the same base value as the body.
 
-```ts
-root.from("position")
+```ts doctest
+const near = root.from("position")
   .others((e) => e._.subtract("position")._.length(), {
     where: (e) => e._.subtract("position")._.length()._.lt(8),
   })
   .count(); // the number of other boxes nearer than 8
+
+near.at("A"); // => some(1)
 ```
 
 A test that fails, or that does not give a boolean, gives an error item for its target. The "near" axis of the explorer above uses this test, with a radius that you can change.

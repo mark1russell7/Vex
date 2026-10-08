@@ -1,0 +1,31 @@
+{
+  "tag": "app",
+  "op": "ifError",
+  "args": [
+    {
+      "tag": "app",
+      "op": "add",
+      "args": [
+        {
+          "tag": "ref",
+          "path": [
+            "position"
+          ]
+        },
+        {
+          "tag": "ref",
+          "path": [
+            "size"
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "lit",
+      "value": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ]
+}

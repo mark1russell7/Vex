@@ -1,5 +1,5 @@
-    position @X = #N/A missing-field: the record at "X" has no value at "position"
-    size @X = #N/A missing-field: the record at "X" has no value at "size"
+    position @X [no value at X.position] = #N/A missing-field: the record at "X" has no value at "position"
+    size @X [no value at X.size] = #N/A missing-field: the record at "X" has no value at "size"
   add @X = #ARGS args: 2 arguments failed
   {"x":0,"y":0} @X = Pt(0, 0)
 ifError @X = Pt(0, 0)

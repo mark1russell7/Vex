@@ -137,10 +137,16 @@ class Interpreter {
         const r =
           handler === undefined
             ? this.#err("unknown-op", `no handler for the extension kind "${e.kind}"`, f, path)
-            : this.#guard(() => handler(e.data, { space: this.#opts.space, position: f.pos, path }), f, path, e.kind);
+            : this.#locate(this.#guard(() => handler(e.data, { space: this.#opts.space, position: f.pos, path }), f, path, e.kind), f, path);
         return this.#emit(e, f, path, r);
       }
     }
+  }
+
+  /** This method gives an error of a handler the path, the origin and the focus of its node, if it has no origin. */
+  #locate(r: Result<unknown>, f: Frame, path: readonly number[]): Result<unknown> {
+    if (r.ok || r.error.origin !== undefined) return r;
+    return fail({ ...r.error, path, origin: f.pos.origin, focus: f.pos.focus });
   }
 
   #guard(run: () => Result<unknown>, f: Frame, path: readonly number[], op: string): Result<unknown> {
@@ -237,11 +243,12 @@ class Interpreter {
         out.push(t);
         continue;
       }
-      const r = this.#ev(a.test, { pos: { origin: f.pos.origin, focus: t.key }, env: f.env }, [...path, testIndex]);
+      const at: Frame = { pos: { origin: f.pos.origin, focus: t.key }, env: f.env };
+      const r = this.#ev(a.test, at, [...path, testIndex]);
       if (!r.ok) out.push({ key: t.key, test: r });
       else if (r.value === true) out.push({ key: t.key });
       else if (r.value !== false) {
-        out.push({ key: t.key, test: this.#err("kind-mismatch", `the test of "where" gave a ${typeof r.value}, not a boolean`, f, [...path, testIndex]) });
+        out.push({ key: t.key, test: this.#err("kind-mismatch", `the test of "where" gave a ${typeof r.value}, not a boolean`, at, [...path, testIndex]) });
       }
     }
     return ok(out);
@@ -513,6 +520,9 @@ export function previewValue(u: unknown): string {
   return describeType(u);
 }
 
+// The reads of a reference show the key and the path, for example "read B.position" or "no value at A.mass".
+const formatRead = (r: Read): string => `${r.ok ? "read" : "no value at"} ${r.key}.${r.path.length === 0 ? "(record)" : r.path.join(".")}`;
+
 /**
  * This function gives a text form of a trace. Each event has one line, in finish order. The indent of a line
  * shows the depth of the node. A domain with `show` gives the text of its values. The golden tests compare this text.
@@ -530,9 +540,8 @@ export function formatTrace(trace: Trace, domains: readonly AnyDomain[] = []): s
   };
   const result = (r: Result<unknown>): string => (r.ok ? show(r.value) : formatError(r.error));
   const line = (e: TraceEvent): string => {
-    // A reference with an address reads at another key. The line names that key.
-    const moved = e.reads?.find((r) => r.key !== e.focus);
-    return `${"  ".repeat(e.path.length)}${e.label} @${moved === undefined ? e.focus : `${e.focus} -> ${moved.key}`} = ${result(e.result)}`;
+    const reads = e.reads === undefined ? "" : ` [${e.reads.map(formatRead).join(", ")}]`;
+    return `${"  ".repeat(e.path.length)}${e.label} @${e.focus}${reads} = ${result(e.result)}`;
   };
   const lines = trace.events.map(line);
   return [...lines, `result = ${result(trace.result)}`, ""].join("\n");

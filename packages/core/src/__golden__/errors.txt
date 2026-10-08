@@ -1,0 +1,393 @@
+## an origin that is not a key
+#REF! unknown-key: the space has no key "Z" | path [] | origin Z | focus Z
+result = #REF! unknown-key: the space has no key "Z"
+
+## a record that is null
+#N/A missing-field: the record at "N" has no value at "(record)" | path [] | origin N | focus N
+(record) @N [no value at N.(record)] = #N/A missing-field: the record at "N" has no value at "(record)"
+result = #N/A missing-field: the record at "N" has no value at "(record)"
+
+## a missing field
+#N/A missing-field: the record at "A" has no value at "mass" | path [] | origin A | focus A
+mass @A [no value at A.mass] = #N/A missing-field: the record at "A" has no value at "mass"
+result = #N/A missing-field: the record at "A" has no value at "mass"
+
+## a null field in a path
+#N/A missing-field: the record at "B" has no value at "deep.x" | path [] | origin B | focus B
+deep.x @B [no value at B.deep.x] = #N/A missing-field: the record at "B" has no value at "deep.x"
+result = #N/A missing-field: the record at "B" has no value at "deep.x"
+
+## a path through a number
+#N/A missing-field: the record at "C" has no value at "deep.x" | path [] | origin C | focus C
+deep.x @C [no value at C.deep.x] = #N/A missing-field: the record at "C" has no value at "deep.x"
+result = #N/A missing-field: the record at "C" has no value at "deep.x"
+
+## a prototype name in a path
+#N/A missing-field: the record at "A" has no value at "deep.__proto__" | path [] | origin A | focus A
+deep.__proto__ @A [no value at A.deep.__proto__] = #N/A missing-field: the record at "A" has no value at "deep.__proto__"
+result = #N/A missing-field: the record at "A" has no value at "deep.__proto__"
+
+## a getter that throws
+#CALC! threw: reading "bad.boom" at "A" threw an exception | path [] | origin A | focus A | thrown getter
+bad.boom @A [no value at A.bad.boom] = #CALC! threw: reading "bad.boom" at "A" threw an exception
+result = #CALC! threw: reading "bad.boom" at "A" threw an exception
+
+## a key that is not in the space
+#REF! unknown-key: the space has no key "Z" | path [] | origin A | focus A
+position @A = #REF! unknown-key: the space has no key "Z"
+result = #REF! unknown-key: the space has no key "Z"
+
+## other outside a pair
+#REF! not-a-pair: "other" needs a space with 2 keys, but this space has 4 | path [] | origin A | focus A
+position @A = #REF! not-a-pair: "other" needs a space with 2 keys, but this space has 4
+result = #REF! not-a-pair: "other" needs a space with 2 keys, but this space has 4
+
+## an index outside the keys
+#REF! out-of-bounds: the space has no key at index 9 | path [] | origin A | focus A
+position @A = #REF! out-of-bounds: the space has no key at index 9
+result = #REF! out-of-bounds: the space has no key at index 9
+
+## an offset in a record space
+#REF! no-offset: an offset of length 1 is not valid in a record space | path [] | origin A | focus A
+position @A = #REF! no-offset: an offset of length 1 is not valid in a record space
+result = #REF! no-offset: an offset of length 1 is not valid in a record space
+
+## an offset outside an array
+#REF! out-of-bounds: the offset [-1] from "0" is outside the space | path [] | origin 0 | focus 0
+v @0 = #REF! out-of-bounds: the offset [-1] from "0" is outside the space
+result = #REF! out-of-bounds: the offset [-1] from "0" is outside the space
+
+## an unbound name
+#NAME? unbound: the name "nope" has no binding | path [] | origin A | focus A
+nope @A = #NAME? unbound: the name "nope" has no binding
+result = #NAME? unbound: the name "nope" has no binding
+
+## a let binding that fails, and a var that reads it
+#N/A missing-field: the record at "A" has no value at "mass" | path [0] | origin A | focus A
+  mass @A [no value at A.mass] = #N/A missing-field: the record at "A" has no value at "mass"
+    x @A = #N/A missing-field: the record at "A" has no value at "mass"
+    size @A [read A.size] = Pt(2, 2)
+  add @A = #N/A missing-field: the record at "A" has no value at "mass"
+let x @A = #N/A missing-field: the record at "A" has no value at "mass"
+result = #N/A missing-field: the record at "A" has no value at "mass"
+
+## an extension without a handler
+#NAME? unknown-op: no handler for the extension kind "sheet" | path [] | origin A | focus A
+sheet @A = #NAME? unknown-op: no handler for the extension kind "sheet"
+result = #NAME? unknown-op: no handler for the extension kind "sheet"
+
+## an extension handler that throws
+#CALC! threw: "bad" threw an exception | path [] | origin A | focus A | op bad | thrown handler
+bad @A = #CALC! threw: "bad" threw an exception
+result = #CALC! threw: "bad" threw an exception
+
+## an extension handler that gives an error
+#N/A empty: nothing here | path [] | origin A | focus A
+no @A = #N/A empty: nothing here
+result = #N/A empty: nothing here
+
+## an op that the domain does not have
+#NAME? unknown-op: the domain "Pt" has no op "fly" | path [] | origin A | focus A | op fly
+  position @A [read A.position] = Pt(0, 0)
+fly @A = #NAME? unknown-op: the domain "Pt" has no op "fly"
+result = #NAME? unknown-op: the domain "Pt" has no op "fly"
+
+## a function without arguments that does not exist
+#NAME? unknown-op: there is no function "nothing" | path [] | origin A | focus A | op nothing
+nothing @A = #NAME? unknown-op: there is no function "nothing"
+result = #NAME? unknown-op: there is no function "nothing"
+
+## a receiver that no domain accepts
+#VALUE! not-instance: no domain accepts the receiver of "shout" (string) | path [] | origin A | focus A | op shout
+  name @A [read A.name] = "a"
+shout @A = #VALUE! not-instance: no domain accepts the receiver of "shout" (string)
+result = #VALUE! not-instance: no domain accepts the receiver of "shout" (string)
+
+## a free function that throws
+#CALC! threw: "parse" threw an exception | path [] | origin A | focus A | op parse | thrown parse
+  name @A [read A.name] = "a"
+parse @A = #CALC! threw: "parse" threw an exception
+result = #CALC! threw: "parse" threw an exception
+
+## a free function without a value
+#CALC! undefined-result: "nil" gave no value | path [] | origin A | focus A | op nil
+  name @A [read A.name] = "a"
+nil @A = #CALC! undefined-result: "nil" gave no value
+result = #CALC! undefined-result: "nil" gave no value
+
+## a free function that gives NaN
+#NUM! not-finite: "nan" gave NaN | path [] | origin A | focus A | op nan
+  name @A [read A.name] = "a"
+nan @A = #NUM! not-finite: "nan" gave NaN
+result = #NUM! not-finite: "nan" gave NaN
+
+## an op that throws
+#CALC! threw: "boom" threw an exception | path [] | origin A | focus A | op boom | thrown boom
+  position @A [read A.position] = Pt(0, 0)
+boom @A = #CALC! threw: "boom" threw an exception
+result = #CALC! threw: "boom" threw an exception
+
+## an op that gives an invalid value
+#NUM! invalid-value: "scale" gave a value that is not a valid Pt | path [] | origin A | focus A | op scale
+  position @A [read A.position] = Pt(0, 0)
+  Infinity @A = Infinity
+scale @A = #NUM! invalid-value: "scale" gave a value that is not a valid Pt
+result = #NUM! invalid-value: "scale" gave a value that is not a valid Pt
+
+## a valid check that throws
+#CALC! threw: the "valid" check of "Fussy" threw an exception | path [] | origin A | focus A | op add | thrown no check
+  position @A [read A.position] = Pt(0, 0)
+  size @A [read A.size] = Pt(2, 2)
+add @A = #CALC! threw: the "valid" check of "Fussy" threw an exception
+result = #CALC! threw: the "valid" check of "Fussy" threw an exception
+
+## a lift that throws
+#CALC! threw: "Lifty.fromScalar" threw an exception | path [] | origin A | focus A | op Lifty.fromScalar | thrown no lift
+  position @A [read A.position] = Pt(0, 0)
+  1 @A = 1
+add @A = #CALC! threw: "Lifty.fromScalar" threw an exception
+result = #CALC! threw: "Lifty.fromScalar" threw an exception
+
+## a domain argument of another kind
+#VALUE! not-instance: argument 1 of "add" is a string, not a Pt | path [] | origin A | focus A | op add
+  position @A [read A.position] = Pt(0, 0)
+  name @A [read A.name] = "a"
+add @A = #VALUE! not-instance: argument 1 of "add" is a string, not a Pt
+result = #VALUE! not-instance: argument 1 of "add" is a string, not a Pt
+
+## a number argument of another kind
+#VALUE! kind-mismatch: argument 1 of "scale" is a string, not a number | path [] | origin A | focus A | op scale
+  position @A [read A.position] = Pt(0, 0)
+  name @A [read A.name] = "a"
+scale @A = #VALUE! kind-mismatch: argument 1 of "scale" is a string, not a number
+result = #VALUE! kind-mismatch: argument 1 of "scale" is a string, not a number
+
+## a boolean argument of another kind
+#VALUE! kind-mismatch: argument 1 of "flag" is a number, not a boolean | path [] | origin A | focus A | op flag
+  weight @A [read A.weight] = 2
+  1 @A = 1
+flag @A = #VALUE! kind-mismatch: argument 1 of "flag" is a number, not a boolean
+result = #VALUE! kind-mismatch: argument 1 of "flag" is a number, not a boolean
+
+## a string argument of another kind
+#VALUE! kind-mismatch: argument 1 of "tag" is a number, not a string | path [] | origin A | focus A | op tag
+  weight @A [read A.weight] = 2
+  1 @A = 1
+tag @A = #VALUE! kind-mismatch: argument 1 of "tag" is a number, not a string
+result = #VALUE! kind-mismatch: argument 1 of "tag" is a number, not a string
+
+## a division by zero
+#NUM! not-finite: "over" gave Infinity | path [] | origin A | focus A | op over
+  weight @A [read A.weight] = 2
+  0 @A = 0
+over @A = #NUM! not-finite: "over" gave Infinity
+result = #NUM! not-finite: "over" gave Infinity
+
+## two failed arguments
+#ARGS args: 2 arguments failed | path [] | origin A | focus A
+  cause: #N/A missing-field: the record at "A" has no value at "mass" | path [0] | origin A | focus A
+  cause: #N/A missing-field: the record at "A" has no value at "speed" | path [1] | origin A | focus A
+  mass @A [no value at A.mass] = #N/A missing-field: the record at "A" has no value at "mass"
+  speed @A [no value at A.speed] = #N/A missing-field: the record at "A" has no value at "speed"
+add @A = #ARGS args: 2 arguments failed
+result = #ARGS args: 2 arguments failed
+
+## two failed fields of a record
+#ARGS args: 2 fields failed | path [] | origin A | focus A
+  cause: #N/A missing-field: the record at "A" has no value at "mass" | path [0] | origin A | focus A
+  cause: #N/A missing-field: the record at "A" has no value at "speed" | path [1] | origin A | focus A
+  mass @A [no value at A.mass] = #N/A missing-field: the record at "A" has no value at "mass"
+  speed @A [no value at A.speed] = #N/A missing-field: the record at "A" has no value at "speed"
+  position @A [read A.position] = Pt(0, 0)
+{ m, s, p } @A = #ARGS args: 2 fields failed
+result = #ARGS args: 2 fields failed
+
+## if without a branch
+#VALUE! bad-expression: "if" needs argument 2 | path [] | origin A | focus A | op if
+  true @A = true
+if @A = #VALUE! bad-expression: "if" needs argument 2
+result = #VALUE! bad-expression: "if" needs argument 2
+
+## if with a number condition
+#VALUE! kind-mismatch: argument 1 of "if" is a number, not a boolean | path [] | origin A | focus A | op if
+  weight @A [read A.weight] = 2
+if @A = #VALUE! kind-mismatch: argument 1 of "if" is a number, not a boolean
+result = #VALUE! kind-mismatch: argument 1 of "if" is a number, not a boolean
+
+## and without arguments
+#VALUE! bad-expression: "and" needs at least 1 argument | path [] | origin A | focus A | op and
+and @A = #VALUE! bad-expression: "and" needs at least 1 argument
+result = #VALUE! bad-expression: "and" needs at least 1 argument
+
+## or with a number
+#VALUE! kind-mismatch: argument 2 of "or" is a number, not a boolean | path [] | origin A | focus A | op or
+  false @A = false
+  weight @A [read A.weight] = 2
+or @A = #VALUE! kind-mismatch: argument 2 of "or" is a number, not a boolean
+result = #VALUE! kind-mismatch: argument 2 of "or" is a number, not a boolean
+
+## ifError with a fallback that fails
+#N/A missing-field: the record at "A" has no value at "speed" | path [1] | origin A | focus A
+  mass @A [no value at A.mass] = #N/A missing-field: the record at "A" has no value at "mass"
+  speed @A [no value at A.speed] = #N/A missing-field: the record at "A" has no value at "speed"
+ifError @A = #N/A missing-field: the record at "A" has no value at "speed"
+result = #N/A missing-field: the record at "A" has no value at "speed"
+
+## neighbors in a record space
+#REF! no-grid: "neighbors" needs a grid space, but this space is a record | path [] | origin A | focus A
+each neighbors @A = #REF! no-grid: "neighbors" needs a grid space, but this space is a record
+result = #REF! no-grid: "neighbors" needs a grid space, but this space is a record
+
+## the other axis outside a pair
+#REF! not-a-pair: "other" needs a space with 2 keys, but this space has 4 | path [] | origin A | focus A
+each other @A = #REF! not-a-pair: "other" needs a space with 2 keys, but this space has 4
+result = #REF! not-a-pair: "other" needs a space with 2 keys, but this space has 4
+
+## a where test that is not a boolean
+#VALUE! kind-mismatch: the test of "where" gave a number, not a boolean | path [0,1] | origin A | focus B
+    weight @B [read B.weight] = 3
+    weight @C [read C.weight] = 5
+    weight @N [no value at N.weight] = #N/A missing-field: the record at "N" has no value at "weight"
+  each where @A = [B: #VALUE! kind-mismatch: the test of "where" gave a number, not a boolean, C: #VALUE! kind-mismatch: the test of "where" gave a number, not a boolean, N: #N/A missing-field: the record at "N" has no value at "weight"]
+  {"strict":true} @A = {"strict":true}
+count @A = #VALUE! kind-mismatch: the test of "where" gave a number, not a boolean
+result = #VALUE! kind-mismatch: the test of "where" gave a number, not a boolean
+
+## a where test that fails
+#N/A missing-field: the record at "B" has no value at "mass" | path [0,1] | origin A | focus B
+    mass @B [no value at B.mass] = #N/A missing-field: the record at "B" has no value at "mass"
+    mass @C [no value at C.mass] = #N/A missing-field: the record at "C" has no value at "mass"
+    mass @N [no value at N.mass] = #N/A missing-field: the record at "N" has no value at "mass"
+  each where @A = [B: #N/A missing-field: the record at "B" has no value at "mass", C: #N/A missing-field: the record at "C" has no value at "mass", N: #N/A missing-field: the record at "N" has no value at "mass"]
+  {"strict":true} @A = {"strict":true}
+count @A = #N/A missing-field: the record at "B" has no value at "mass"
+result = #N/A missing-field: the record at "B" has no value at "mass"
+
+## sum of vectors
+#VALUE! kind-mismatch: "sum" needs numbers, but an item is a Pt | path [] | origin A | focus A | op sum
+    position @A [read A.position] = Pt(0, 0)
+    position @B [read B.position] = Pt(3, 4)
+    position @C [read C.position] = Pt(6, 8)
+    position @N [no value at N.position] = #N/A missing-field: the record at "N" has no value at "position"
+  each all @A = [A: Pt(0, 0), B: Pt(3, 4), C: Pt(6, 8), N: #N/A missing-field: the record at "N" has no value at "position"]
+sum @A = #VALUE! kind-mismatch: "sum" needs numbers, but an item is a Pt
+result = #VALUE! kind-mismatch: "sum" needs numbers, but an item is a Pt
+
+## mean of vectors
+#VALUE! kind-mismatch: "mean" needs numbers, but an item is a Pt | path [] | origin A | focus A | op mean
+    position @A [read A.position] = Pt(0, 0)
+    position @B [read B.position] = Pt(3, 4)
+    position @C [read C.position] = Pt(6, 8)
+    position @N [no value at N.position] = #N/A missing-field: the record at "N" has no value at "position"
+  each all @A = [A: Pt(0, 0), B: Pt(3, 4), C: Pt(6, 8), N: #N/A missing-field: the record at "N" has no value at "position"]
+mean @A = #VALUE! kind-mismatch: "mean" needs numbers, but an item is a Pt
+result = #VALUE! kind-mismatch: "mean" needs numbers, but an item is a Pt
+
+## max of vectors
+#VALUE! kind-mismatch: "max" needs numbers, but an item is a Pt | path [] | origin A | focus A | op max
+    position @A [read A.position] = Pt(0, 0)
+    position @B [read B.position] = Pt(3, 4)
+    position @C [read C.position] = Pt(6, 8)
+    position @N [no value at N.position] = #N/A missing-field: the record at "N" has no value at "position"
+  each all @A = [A: Pt(0, 0), B: Pt(3, 4), C: Pt(6, 8), N: #N/A missing-field: the record at "N" has no value at "position"]
+max @A = #VALUE! kind-mismatch: "max" needs numbers, but an item is a Pt
+result = #VALUE! kind-mismatch: "max" needs numbers, but an item is a Pt
+
+## all of vectors
+#VALUE! kind-mismatch: "all" needs booleans, but an item is a Pt | path [] | origin A | focus A | op all
+    position @A [read A.position] = Pt(0, 0)
+    position @B [read B.position] = Pt(3, 4)
+    position @C [read C.position] = Pt(6, 8)
+    position @N [no value at N.position] = #N/A missing-field: the record at "N" has no value at "position"
+  each all @A = [A: Pt(0, 0), B: Pt(3, 4), C: Pt(6, 8), N: #N/A missing-field: the record at "N" has no value at "position"]
+all @A = #VALUE! kind-mismatch: "all" needs booleans, but an item is a Pt
+result = #VALUE! kind-mismatch: "all" needs booleans, but an item is a Pt
+
+## mean of nothing
+#N/A empty: "mean" has no values to work with | path [] | origin A | focus A | op mean
+    false @A = false
+    false @B = false
+    false @C = false
+    false @N = false
+  each where @A = []
+mean @A = #N/A empty: "mean" has no values to work with
+result = #N/A empty: "mean" has no values to work with
+
+## min of nothing
+#N/A empty: "min" has no values to work with | path [] | origin A | focus A | op min
+    false @A = false
+    false @B = false
+    false @C = false
+    false @N = false
+  each where @A = []
+min @A = #N/A empty: "min" has no values to work with
+result = #N/A empty: "min" has no values to work with
+
+## first of nothing
+#N/A empty: "first" has no values to work with | path [] | origin A | focus A | op first
+    false @A = false
+    false @B = false
+    false @C = false
+    false @N = false
+  each where @A = []
+first @A = #N/A empty: "first" has no values to work with
+result = #N/A empty: "first" has no values to work with
+
+## a strict reduction over an error item
+#N/A missing-field: the record at "N" has no value at "weight" | path [0,0] | origin A | focus N
+    weight @A [read A.weight] = 2
+    weight @B [read B.weight] = 3
+    weight @C [read C.weight] = 5
+    weight @N [no value at N.weight] = #N/A missing-field: the record at "N" has no value at "weight"
+  each all @A = [A: 2, B: 3, C: 5, N: #N/A missing-field: the record at "N" has no value at "weight"]
+  {"strict":true} @A = {"strict":true}
+sum @A = #N/A missing-field: the record at "N" has no value at "weight"
+result = #N/A missing-field: the record at "N" has no value at "weight"
+
+## reduce with a number as the op
+#VALUE! kind-mismatch: "reduce" needs an op name, but got a number | path [] | origin A | focus A | op reduce
+    position @A [read A.position] = Pt(0, 0)
+    position @B [read B.position] = Pt(3, 4)
+    position @C [read C.position] = Pt(6, 8)
+    position @N [no value at N.position] = #N/A missing-field: the record at "N" has no value at "position"
+  each all @A = [A: Pt(0, 0), B: Pt(3, 4), C: Pt(6, 8), N: #N/A missing-field: the record at "N" has no value at "position"]
+  1 @A = 1
+reduce @A = #VALUE! kind-mismatch: "reduce" needs an op name, but got a number
+result = #VALUE! kind-mismatch: "reduce" needs an op name, but got a number
+
+## reduce with an op that the values do not have
+#NAME? unknown-op: no domain gives "add" for a string | path [] | origin A | focus A | op add
+    true @A = true
+    true @B = true
+    true @C = true
+    true @N = true
+    name @A [read A.name] = "a"
+    name @B [read B.name] = "b"
+    name @C [read C.name] = "c"
+    name @N [no value at N.name] = #N/A missing-field: the record at "N" has no value at "name"
+  each where @A = [A: "a", B: "b", C: "c", N: #N/A missing-field: the record at "N" has no value at "name"]
+  "add" @A = "add"
+reduce @A = #NAME? unknown-op: no domain gives "add" for a string
+result = #NAME? unknown-op: no domain gives "add" for a string
+
+## reduce of nothing without an identity
+#N/A empty: "reduce" with "subtract" has no values and the op has no identity | path [] | origin A | focus A | op subtract
+    false @A = false
+    false @B = false
+    false @C = false
+    false @N = false
+  each where @A = []
+  "subtract" @A = "subtract"
+reduce @A = #N/A empty: "reduce" with "subtract" has no values and the op has no identity
+result = #N/A empty: "reduce" with "subtract" has no values and the op has no identity
+
+## reduce with an op that throws
+#CALC! threw: "boom" threw an exception | path [] | origin A | focus A | op boom | thrown boom
+    position @A [read A.position] = Pt(0, 0)
+    position @B [read B.position] = Pt(3, 4)
+    position @C [read C.position] = Pt(6, 8)
+    position @N [no value at N.position] = #N/A missing-field: the record at "N" has no value at "position"
+  each all @A = [A: Pt(0, 0), B: Pt(3, 4), C: Pt(6, 8), N: #N/A missing-field: the record at "N" has no value at "position"]
+  "boom" @A = "boom"
+reduce @A = #CALC! threw: "boom" threw an exception
+result = #CALC! threw: "boom" threw an exception

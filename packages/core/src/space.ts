@@ -149,7 +149,7 @@ export function applyMove(s: Space, at: Position, m: Move): Result<string> {
     case "offset": {
       const c = s.coords(at.focus);
       if (c === undefined || c.length !== m.d.length) {
-        return refError("no-offset", `an offset of ${m.d.length} numbers is not valid in a ${s.kind} space`);
+        return refError("no-offset", `an offset of length ${m.d.length} is not valid in a ${s.kind} space`);
       }
       // The lengths are equal, so each index of `c` is also an index of `m.d`.
       /* v8 ignore next -- @preserve */

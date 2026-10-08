@@ -46,6 +46,11 @@ describe("golden traces (TRACE.EVENTS)", () => {
     await expectGolden("offsets", c.program, c.explain("A"));
   });
 
+  it("nested axes: each binding has its own name", async () => {
+    const c = four.from("position").each((t) => t.from("size").others((u) => u._.add("size")).reduce("add")).reduce("add");
+    await expectGolden("nested", c.program, c.explain("A"));
+  });
+
   it("an error value at X: two failed arguments give #ARGS with each cause", async () => {
     const c = loose.from("position")._.add("size").ifError(new Pt(0, 0));
     await expectGolden("args-fallback", c.program, c.explain("X"));
@@ -63,7 +68,7 @@ describe("formatTrace", () => {
       ops: {},
     });
     const trace = explain(ref("position"), { space: space.record({ A }), origin: "A", domains: [Loud] });
-    expect(formatTrace(trace, [Loud])).toBe('position @A = {"x":0,"y":0}\nresult = {"x":0,"y":0}\n');
+    expect(formatTrace(trace, [Loud])).toBe('position @A [read A.position] = {"x":0,"y":0}\nresult = {"x":0,"y":0}\n');
     expect(formatTrace(trace)).toBe(formatTrace(trace, [Loud]));
   });
 });

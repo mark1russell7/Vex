@@ -1,12 +1,12 @@
-    position @A = Pt(0, 0)
+    position @A [read A.position] = Pt(0, 0)
         $0 @B = Pt(0, 0)
-        position @B = Pt(3, 4)
+        position @B [read B.position] = Pt(3, 4)
       subtract @B = Pt(-3, -4)
         $0 @C = Pt(0, 0)
-        position @C = Pt(6, 8)
+        position @C [read C.position] = Pt(6, 8)
       subtract @C = Pt(-6, -8)
         $0 @D = Pt(0, 0)
-        position @D = Pt(0, 1)
+        position @D [read D.position] = Pt(0, 1)
       subtract @D = Pt(0, -1)
     each others @A = [B: Pt(-3, -4), C: Pt(-6, -8), D: Pt(0, -1)]
   let $0 @A = [B: Pt(-3, -4), C: Pt(-6, -8), D: Pt(0, -1)]

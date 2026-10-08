@@ -245,6 +245,25 @@ describe("the other members of the builder", () => {
     expect(optionalValue(flags.none().at("A"))).toBe(false);
   });
 
+  it("LIST.LENIENT: a list chain reduction is lenient by default, and strict with { strict: true }", () => {
+    const loose = vex(PtDomain, Num).over(space.record<Record<string, Partial<Box>>>({ A, B, X: { name: "x" } }));
+    const looseWeights = loose.start(0).each((t) => t.from("weight"));
+    expect(optionalValue(looseWeights.max().at("A"))).toBe(3);
+    expect(looseWeights.max({ strict: true }).at("A")).toEqual({ tag: "none" });
+    expect(error(looseWeights.sum({ strict: true }).result("A")).code).toBe("#N/A");
+    expect(error(looseWeights.values({ strict: true }).result("A")).code).toBe("#N/A");
+    expect(optionalValue(looseWeights.count().at("A"))).toBe(2);
+  });
+
+  it("arguments: a list chain, null and a nested record are values of the program", () => {
+    const r = four.start(four.rec({ list: weights, none: null, inner: four.rec({ w: "weight" }) })).result("A");
+    const v = value(r) as { readonly list: unknown; readonly none: unknown; readonly inner: { readonly w: number } };
+    expect(v.none).toBeNull();
+    expect(v.inner.w).toBe(2);
+    expect((v.list as { readonly items: readonly unknown[] }).items).toHaveLength(4);
+    expect(value(four.start(null).result("A"))).toBeNull();
+  });
+
   it("withOptions() gives the free functions and the extension handlers to the interpreter", () => {
     const root = vex(Num)
       .withOptions({ fns: { half: (n: unknown) => Number(n) / 2 }, extensions: { seven: () => ok(7) } })

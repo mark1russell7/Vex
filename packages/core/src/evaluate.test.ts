@@ -338,6 +338,15 @@ describe("the edges of the interpreter", () => {
     expect(error(evaluate(ref("position"), { space: broken, origin: "A" }))).toMatchObject({ code: "#CALC!", origin: "A" });
   });
 
+  it("EVAL.LOCATION: an error has the path, the origin and the focus of its node", () => {
+    const fromHandler = run(app("add", ref("position"), ext("no", null)), { extensions: { no: () => fail(vexError("empty", "nothing")) } });
+    expect(error(fromHandler)).toMatchObject({ code: "#N/A", path: [1], origin: "A", focus: "A" });
+    const located = run(ext("no", null), { extensions: { no: () => fail(vexError("empty", "nothing", { origin: "B", focus: "B", path: [7] })) } });
+    expect(error(located)).toMatchObject({ path: [7], origin: "B", focus: "B" });
+    const test = run(app("count", each(axes.where(axes.others, ref("weight")), ref("position")), lit({ strict: true })));
+    expect(error(test)).toMatchObject({ code: "#VALUE!", path: [0, 1], origin: "A", focus: "B" });
+  });
+
   it("an extension kind without a handler gives #NAME?", () => {
     expect(error(run(ext("sheet", null))).code).toBe("#NAME?");
   });

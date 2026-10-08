@@ -1,0 +1,70 @@
+{
+  "tag": "app",
+  "op": "reduce",
+  "args": [
+    {
+      "tag": "let",
+      "bind": {
+        "$0": {
+          "tag": "ref",
+          "path": [
+            "position"
+          ]
+        }
+      },
+      "body": {
+        "tag": "each",
+        "axis": {
+          "t": "all"
+        },
+        "body": {
+          "tag": "app",
+          "op": "reduce",
+          "args": [
+            {
+              "tag": "let",
+              "bind": {
+                "$1": {
+                  "tag": "ref",
+                  "path": [
+                    "size"
+                  ]
+                }
+              },
+              "body": {
+                "tag": "each",
+                "axis": {
+                  "t": "others"
+                },
+                "body": {
+                  "tag": "app",
+                  "op": "add",
+                  "args": [
+                    {
+                      "tag": "var",
+                      "name": "$1"
+                    },
+                    {
+                      "tag": "ref",
+                      "path": [
+                        "size"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "tag": "lit",
+              "value": "add"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "lit",
+      "value": "add"
+    }
+  ]
+}

@@ -15,7 +15,8 @@ export default defineConfig({
   },
   test: {
     include: ["work/**/*.test.ts"],
-    exclude: ["work/core/golden.test.ts", "work/core/spec-coverage.test.ts"],
+    // The spec coverage test reads the spec by a path from packages/core, so it does not run here.
+    exclude: ["work/core/spec-coverage.test.ts"],
     setupFiles: [work("testkit/fc-setup.ts")],
   },
 });

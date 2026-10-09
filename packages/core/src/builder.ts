@@ -670,6 +670,7 @@ class SheetImpl {
     return new SheetRun(this.#columns, {
       space: s,
       domains,
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(options.fns === undefined ? {} : { fns: options.fns }),
       // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(options.extensions === undefined ? {} : { extensions: options.extensions }),

@@ -29,8 +29,9 @@ const isPlainJson = (u: unknown): boolean => {
 export function serialize(e: Expr, domains: readonly AnyDomain[] = []): Result<string> {
   const failure: { message: string }[] = [];
   const replacer = function (this: unknown, k: string, value: unknown): unknown {
-    const holder = this as Record<string, unknown> | null;
-    if (k !== "value" || holder === null || holder["tag"] !== "lit") return value;
+    // JSON.stringify gives each replacer call an object as this.
+    const holder = this as Record<string, unknown>;
+    if (k !== "value" || holder["tag"] !== "lit") return value;
     if (isPlainJson(value)) return value;
     const d = domains.find((dom) => dom.encode !== undefined && dom.is(value));
     if (d?.encode !== undefined) {
@@ -51,7 +52,7 @@ export function serialize(e: Expr, domains: readonly AnyDomain[] = []): Result<s
 }
 
 const isEncoded = (u: unknown): u is EncodedValue =>
-  typeof u === "object" && u !== null && (u as { $vex?: unknown }).$vex === "domain" && typeof (u as { domain?: unknown }).domain === "string";
+  (u as { $vex?: unknown } | null)?.$vex === "domain" && typeof (u as { domain?: unknown }).domain === "string";
 
 /** This function reads an expression from JSON text. It checks the whole tree. */
 // Stryker disable next-line ArrayDeclaration: a list with a value that is not a domain decodes no value

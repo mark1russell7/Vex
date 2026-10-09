@@ -56,6 +56,7 @@ describe("the contracts of sheets", () => {
         path: [],
       });
     }
+    expect(error(run({ c: app("plus", lit(1), ext("vex.cell", null)) }).cell("c", "A")).path).toEqual([1]);
   });
 
   it("SHEET.CELL: an address outside the space gives the #REF! of the address", () => {
@@ -80,6 +81,9 @@ describe("the contracts of sheets", () => {
     const sheet = rows.sheet().column("c", (r) => r.start(r.ext<number>("tick")));
     expect(value(sheet.result("2", "c"))).toBe(1);
     expect(log).toEqual(["0", "1", "2"]);
+    log.length = 0;
+    expect(sheet.explain("2", "c").result).toEqual(ok(1));
+    expect(log.slice(0, 2)).toEqual(["0", "1"]);
   });
 
   it("SHEET.CELL: a sheet gives its free functions to each formula", () => {
@@ -97,6 +101,8 @@ describe("the contracts of the JSON form", () => {
     const data = value(serialize(ext("k", { value: new Pt(1, 2) }), [PtDomain]));
     expect(data).toContain('"value":{"x":1,"y":2}');
     expect(data).not.toContain("$vex");
+    // An object with the tag "lit" inside other data is not a literal node, so its other fields are not values.
+    expect(value(serialize(ext("k", { tag: "lit", other: new Pt(1, 2) }), [PtDomain]))).not.toContain("$vex");
     expect(value(serialize(lit(new Pt(1, 2)), [NoEncode, PtDomain]))).toContain('"$vex":"domain","domain":"Pt"');
   });
 
@@ -115,14 +121,14 @@ describe("the contracts of the JSON form", () => {
   });
 
   it("IR.JSON: null, and a record with the field domain, round-trip without a decoder", () => {
-    for (const e of [lit(null), lit({ domain: "Pt", value: [1, 2] }), lit({ $vex: "other", domain: "Pt" })]) {
+    for (const e of [lit(null), lit({ domain: "Pt", value: [1, 2] }), lit({ $vex: "other", domain: "Pt" }), lit({ $vex: "domain", domain: 5 })]) {
       expect(value(parse(value(serialize(e)), [PtDomain]))).toEqual(e);
     }
   });
 
   it("IR.JSON: parse gives a message for an unknown domain, for text that is not JSON and for JSON that is not an expression", () => {
     const unknown = '{"tag":"lit","value":{"$vex":"domain","domain":"Other","value":1}}';
-    expect(error(parse(unknown, [PtDomain])).message).toBe('no domain "Other" decodes a literal');
+    expect(error(parse(unknown, [PtDomain]))).toMatchObject({ kind: "bad-expression", message: 'no domain "Other" decodes a literal' });
     const notJson = error(parse("{"));
     expect(notJson).toMatchObject({ kind: "bad-expression", message: "the text is not JSON" });
     expect(notJson.thrown).toBeInstanceOf(SyntaxError);
@@ -184,15 +190,17 @@ describe("the contracts of the interpreter", () => {
   });
 
   it("EVAL.COMPILE: one expression object with other domains, functions or extensions gives their results", () => {
+    // One list of domains for each call, so only the changed option is different.
+    const domains = [PtDomain];
     const e = app("length", ref("position"));
-    expect(value(at(e))).toBe(0);
+    expect(value(at(e, { domains }))).toBe(0);
     expect(error(at(e, { domains: [] })).code).toBe("#VALUE!");
     const f = app("f", lit("x"));
-    expect(value(at(f, { fns: { f: () => 1 } }))).toBe(1);
-    expect(value(at(f, { fns: { f: () => 2 } }))).toBe(2);
+    expect(value(at(f, { domains, fns: { f: () => 1 } }))).toBe(1);
+    expect(value(at(f, { domains, fns: { f: () => 2 } }))).toBe(2);
     const x = ext("k", null);
-    expect(value(at(x, { extensions: { k: () => ok(1) } }))).toBe(1);
-    expect(value(at(x, { extensions: { k: () => ok(2) } }))).toBe(2);
+    expect(value(at(x, { domains, extensions: { k: () => ok(1) } }))).toBe(1);
+    expect(value(at(x, { domains, extensions: { k: () => ok(2) } }))).toBe(2);
   });
 
   it("TRACE.EVENTS: an event without reads has no reads field, and a literal line has no reads", () => {
@@ -206,6 +214,7 @@ describe("the contracts of the interpreter", () => {
     const msg = (e: Expr, origin: string) => error(evaluate(e, { space: sp, origin })).message;
     expect(msg(ref("deep.x"), "N")).toBe('the record at "N" has no value at "deep.x"');
     expect(msg(ref("a"), "U")).toBe('the record at "U" has no value at "a"');
+    expect(msg(ref("deep.x"), "U")).toBe('the record at "U" has no value at "deep.x"');
     expect(msg(ref("deep.x.y"), "E")).toBe('the record at "E" has no value at "deep"');
     expect(value(evaluate(ref("f.tag"), { space: sp, origin: "F" }))).toBe("x");
   });
@@ -252,7 +261,10 @@ describe("the contracts of the interpreter", () => {
   });
 
   it("LIST.EMPTY: reduce takes the op from the first domain that accepts the value and has the op", () => {
-    expect(value(at(app("reduce", each(axes.all, ref("position")), lit("add")), { domains: [Num, PtDomain] }))).toEqual(new Pt(3, 4));
+    const NoOps = defineDomain({ name: "PtNoOps", is: (u: unknown): u is Pt => u instanceof Pt, ops: {} });
+    const sum = app("reduce", each(axes.all, ref("position")), lit("add"));
+    expect(value(at(sum, { domains: [Num, NoOps, PtDomain] }))).toEqual(new Pt(3, 4));
+    expect(error(at(sum, { domains: [NoOps] }))).toMatchObject({ kind: "unknown-op", op: "add" });
   });
 
   it("previewValue and describeType at their edges", () => {
@@ -269,8 +281,18 @@ describe("the contracts of the interpreter", () => {
 
   it("formatTrace takes show from the first domain that accepts the value", () => {
     const Other = defineDomain({ name: "Other", is: (u: unknown): u is number => typeof u === "number", show: (): string => "number!", ops: {} });
+    const NoShow = defineDomain({ name: "PtNoShow", is: (u: unknown): u is Pt => u instanceof Pt, ops: {} });
     const t = explain(lit(new Pt(1, 2)), { space: s, origin: "A" });
-    expect(formatTrace(t, [Other, PtDomain])).toBe("{\"x\":1,\"y\":2} @A = Pt(1, 2)\nresult = Pt(1, 2)\n");
+    expect(formatTrace(t, [Other, NoShow, PtDomain])).toBe("{\"x\":1,\"y\":2} @A = Pt(1, 2)\nresult = Pt(1, 2)\n");
+  });
+
+  it("formatTrace shows each read of an event, also for a trace that a host makes", () => {
+    const reads = [
+      { key: "A", path: ["x"], ok: true },
+      { key: "B", path: [], ok: false },
+    ];
+    const t = { events: [{ path: [], tag: "ref" as const, label: "x", origin: "A", focus: "A", reads, result: ok(1) }], result: ok(1) };
+    expect(formatTrace(t)).toBe("x @A [read A.x, no value at B.(record)] = 1\nresult = 1\n");
   });
 });
 
@@ -304,6 +326,7 @@ describe("the contracts of spaces and traversals", () => {
     expect(space.grid([[1, 2]]).keyAt([5, 5])).toBeUndefined();
     expect(value(applyMove(space.record({ A: 1, B: 2 }), { origin: "B", focus: "B" }, index(0)))).toBe("A");
     expect(error(applyMove(arr, { origin: "0", focus: "0" }, offset(-1))).message).toBe('the offset [-1] from "0" is outside the space');
+    expect(error(applyMove(space.grid([[1]]), { origin: "0,0", focus: "0,0" }, offset(1, 1))).message).toBe('the offset [1,1] from "0,0" is outside the space');
   });
 
   it("SPACE.TREE: the messages of the constructor, and a parent of undefined is a root", () => {
@@ -348,6 +371,15 @@ describe("the contracts of the builder", () => {
       expect(ops[name]).toBeUndefined();
     }
     expect(ops["add"]).toBeTypeOf("function");
+  });
+
+  it("with(): the names of the variables have the depth of the scope, so a nested scope can use the same name", () => {
+    const c = vex(Num)
+      .over(s)
+      .start(1)
+      .with({ k: 2 }, (outer, { k }) => outer.with({ k }, (inner, { k: same }) => inner._.plus(same)));
+    expect(c.program).toMatchObject({ tag: "let", bind: { k$0: lit(2) }, body: { tag: "let", bind: { k$1: { tag: "var", name: "k$0" } } } });
+    expect(value(c.result("A"))).toBe(3);
   });
 
   it("start() with a field name reads the field at the focus", () => {

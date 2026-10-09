@@ -533,14 +533,15 @@ const FORBIDDEN_FIELDS = new Set(["__proto__", "constructor", "prototype"]);
 const isFieldName = (seg: string): boolean => seg.length > 0 && !FORBIDDEN_FIELDS.has(seg);
 
 /** This function runs the `is` test of a domain. A test that throws counts as `false`. */
+// Stryker disable BlockStatement: an empty catch gives undefined, which also counts as false
 function safeIs(d: AnyDomain, value: unknown): boolean {
   try {
     return d.is(value);
-    // Stryker disable next-line BlockStatement: an empty catch gives undefined, which also counts as false
   } catch {
     return false;
   }
 }
+// Stryker restore BlockStatement
 
 
 function matchesKind(kind: ParamKind, value: unknown, domain: AnyDomain): boolean {

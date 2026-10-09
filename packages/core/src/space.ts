@@ -109,8 +109,9 @@ class GridSpace<O> implements Space<GridKey, O> {
     return this.#coords.get(k);
   }
   keyAt(coords: readonly number[]): GridKey | undefined {
+    // Each key has two coordinates, so a list with more or fewer coordinates gives no key.
     const k = coords.join(",");
-    return coords.length === 2 && this.has(k) ? k : undefined;
+    return this.has(k) ? k : undefined;
   }
 }
 

@@ -5,11 +5,11 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   reporter: process.env["CI"] === undefined ? "list" : [["list"], ["github"]],
-  use: { baseURL: "http://127.0.0.1:4330/Vex/" },
+  use: { baseURL: "http://127.0.0.1:4330/vex/" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: "pnpm exec astro preview --port 4330 --host 127.0.0.1",
-    url: "http://127.0.0.1:4330/Vex/",
+    url: "http://127.0.0.1:4330/vex/",
     reuseExistingServer: process.env["CI"] === undefined,
     timeout: 60_000,
     env: { ASTRO_TELEMETRY_DISABLED: "1" },

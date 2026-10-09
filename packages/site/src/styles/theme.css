@@ -295,3 +295,61 @@ header.header {
 .vx-frame :is(button, .vx-button, label, output, input, select, svg, table, pre, figure, li) {
   margin-top: 0;
 }
+
+/* The Lab: the editor beside the canvas on wide screens. */
+.vx-lab-grid {
+  display: grid;
+  gap: var(--space-4, 1rem);
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 60rem) {
+  .vx-lab-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.vx-lab-code {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.5;
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius, 6px);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink);
+  resize: vertical;
+  tab-size: 2;
+  field-sizing: content;
+  min-height: 8rem;
+  max-height: 24rem;
+}
+.vx-lab-code:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.vx-lab-error {
+  margin: var(--space-2, 0.5rem) 0 0;
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  border-left: 3px solid var(--color-mark);
+  background: var(--color-mark-wash);
+  color: var(--color-ink);
+  font-size: var(--text-sm, 0.875rem);
+}
+.vx-lab-hint {
+  margin: var(--space-2, 0.5rem) 0 0;
+  font-size: var(--text-sm, 0.875rem);
+}
+.vx-lab-chips {
+  margin-top: var(--space-3, 0.75rem);
+}
+.vx-lab-chips .vx-chip {
+  cursor: pointer;
+  border: 1px solid var(--color-control-border);
+}
+.vx-lab-canvas {
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius, 6px);
+  overflow: hidden;
+  background: var(--color-surface);
+}

@@ -58,14 +58,39 @@ test("the stepper on the home page evaluates the overlap program", async ({ page
   await expect(stepper.getByText("Result at C:")).toBeVisible();
 });
 
-test("the Lab shows the result at each origin and builds a chain from chips", async ({ page }) => {
+test("the Lab reads a typed chain, evaluates it at each record, and shows an error with its position", async ({ page }) => {
   await page.goto("./lab/");
   const lab = page.getByRole("region", { name: "The Lab" });
   await hydrated(lab);
-  await expect(lab.getByRole("table", { name: "The result at each origin" })).toBeVisible();
-  await lab.getByRole("button", { name: "Clear" }).click();
-  await lab.getByRole("button", { name: 'from("size")' }).click();
-  await expect(lab.locator("pre.vx-code")).toContainText('root.from("size")');
+  const results = lab.getByRole("table", { name: "The result at each record" });
+  await expect(results.getByRole("row").first()).toContainText("5");
+  const editor = lab.getByRole("textbox", { name: "The Vex chain" });
+  await editor.fill('root.from("weight")._.multiply(10)');
+  await expect(results.getByRole("row").first()).toContainText("20");
+  await editor.fill('root.from("weight")._.multiply(10');
+  await expect(lab.getByRole("alert")).toContainText("line 1");
+  await editor.fill("root.constructor");
+  await expect(lab.getByRole("alert")).toContainText("not a member");
+});
+
+test("the Lab switches spaces, and a link opens the same program", async ({ page }) => {
+  await page.goto("./lab/");
+  const lab = page.getByRole("region", { name: "The Lab" });
+  await hydrated(lab);
+  await lab.getByRole("tab", { name: "Tree" }).click();
+  await expect(lab.getByRole("button", { name: /Ada, CEO: 1110/ })).toBeVisible();
+  const editor = lab.getByRole("textbox", { name: "The Vex chain" });
+  await editor.fill("root.start(0).ancestors((a) => a).count()");
+  await lab.getByRole("button", { name: "Copy link" }).click();
+  await expect(page).toHaveURL(/#lab=/);
+  const link = page.url();
+  await page.goto("about:blank");
+  await page.goto(link);
+  const again = page.getByRole("region", { name: "The Lab" });
+  await hydrated(again);
+  await expect(again.getByRole("tab", { name: "Tree" })).toHaveAttribute("aria-selected", "true");
+  await expect(again.getByRole("textbox", { name: "The Vex chain" })).toHaveValue("root.start(0).ancestors((a) => a).count()");
+  await expect(again.getByRole("button", { name: /Cy, Developer: 2/ })).toBeVisible();
 });
 
 test("the Game of Life computes a generation with the Vex rule", async ({ page }) => {

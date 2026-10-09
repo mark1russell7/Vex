@@ -1,20 +1,22 @@
 ---
 title: The Lab
-description: Build a chain from chips, see the result at each origin and the trace, and change the program as JSON.
+description: Write a Vex chain and see its result at each record of four spaces - boxes, a Life grid, an organization tree and rows - with the trace, the JSON and a link to share.
 tableOfContents: false
+template: splash
 ---
 
 import Lab from "../../components/Lab.tsx";
-import Stepper from "../../components/Stepper.tsx";
 
-The Lab builds a chain from chips. Each chip adds one call. The chips of the ops come from the domain of the current value: after `length()`, the Lab shows the ops of numbers.
-
-The Lab shows the code of the chain, the result at each origin and the trace. The last panel shows the program as JSON. A Vex program is data: change the JSON, leave the field, and the Lab evaluates the new program.
+Write a Vex chain, or start from a preset. The Lab reads the chain as you type, evaluates it at each record of the space, and draws the result at each record. Select a record to see the trace of the evaluation there.
 
 <Lab client:load />
 
-## The boxes
+## How the Lab works
 
-The Lab reads the same four boxes as the other pages. Drag a box here, and the results of the Lab change.
+- **Four spaces.** The boxes are a record space. Life is a grid space. The organization chart is a tree space. The rows are an array space. Each space has its own moves and axes.
+- **A safe reader.** The Lab does not run your text as JavaScript. A small reader reads the chain: `const` lines, calls, arrow functions and literals. It permits only the members of the builder, so a shared link cannot run other code.
+- **The ops of the current value.** Under the editor, the chips show the ops of the domain of the result at the origin. A chip adds the op to the end of the chain. After an axis, the chips show the reductions of the list.
+- **A link for each program.** "Copy link" puts the space and the code in the address of the page. The link opens the same program.
+- **Programs are data.** The last panel shows the program as JSON: the same tree that `serialize` gives.
 
-<Stepper client:visible program="far-corner" title="The boxes and the far corner of each box" />
+The boxes are the same four boxes as the other pages. Drag a box in the Lab, and the results change.

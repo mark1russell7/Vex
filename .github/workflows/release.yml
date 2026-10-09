@@ -3,10 +3,9 @@ name: Release
 # Changesets: this workflow opens a pull request with the new versions and change logs. After a merge of that
 # pull request, the next start publishes the packages to npm with provenance.
 #
-# The owner starts it by hand. Before the first release, the owner does these steps (docs/REVIEW.md §9.1, D8):
-# 1. Set the package names and remove "private": true from @mark1russell7/vex, @mark1russell7/vex-domains and @mark1russell7/vex-testkit.
-# 2. On npmjs.com, add this repository and this workflow as the trusted publisher of each package, with direct
-#    publishing (Changesets cannot stage a release at this time).
+# The owner starts it by hand. The job runs in the GitHub environment "npm", so the owner approves each run.
+# npm trusts this workflow for each package (trusted publishing with OIDC, so there is no token):
+#   npm trust github <package> --file release.yml --repo mark1russell7/vex --env npm --allow-publish
 on:
   workflow_dispatch:
 
@@ -20,6 +19,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: npm
     permissions:
       # The version pull request: a branch and a pull request
       contents: write

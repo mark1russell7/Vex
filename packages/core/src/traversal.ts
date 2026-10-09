@@ -3,7 +3,7 @@ import { vexError, type VexError } from "./errors.ts";
 import { evaluate, type FreeFn } from "./evaluate.ts";
 import { app, lit, v } from "./ir.ts";
 import { vexList, type ListItem } from "./list.ts";
-import { fail, ok, toOptional, type Optional, type Result } from "./result.ts";
+import { fail, none, ok, toOptional, type Optional, type Result } from "./result.ts";
 import { space as spaces, type Space } from "./space.ts";
 
 /** A monoid: an associative `concat` with an identity element `empty`. */
@@ -84,7 +84,6 @@ export function traversal<K extends string, T>(items: readonly TraversalItem<K, 
       origin: "$",
       domains: env.domains,
       vars: { $list: list },
-      ...(env.options?.fns === undefined ? {} : { fns: env.options.fns }),
     });
   };
   const t: Traversal<K, T> = {
@@ -92,7 +91,7 @@ export function traversal<K extends string, T>(items: readonly TraversalItem<K, 
     strict: () => traversal(items, env, true),
     get: (k) => {
       const item = items.find((it) => it.key === k);
-      return item === undefined ? toOptional(fail(vexError("unknown-key", `no item has the key "${k}"`))) : toOptional(item.result);
+      return item === undefined ? none() : toOptional(item.result);
     },
     values: () => items.flatMap((it) => (it.result.ok ? [it.result.value] : [])),
     keys: () => items.flatMap((it) => (it.result.ok ? [it.key] : [])),

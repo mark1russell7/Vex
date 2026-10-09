@@ -64,8 +64,10 @@ export class SheetRun {
   readonly #done = new Map<string, Result<unknown>>();
   // The cells on the stack of the search: started, but their component is not finished.
   readonly #visits = new Map<string, Visit>();
+  // Stryker disable next-line ArrayDeclaration: the search never reads below the root of a component
   readonly #stack: Visit[] = [];
   // The cell whose formula is in evaluation. At the top level, it is a placeholder that is not a cell.
+  // Stryker disable next-line all: the placeholder is not a cell, so the search reads none of its fields
   #top: Visit = { id: "", column: "", key: "", index: -1, low: -1, selfLoop: false, result: cycleError("", "") };
   #next = 0;
 
@@ -115,6 +117,7 @@ export class SheetRun {
     const members = this.#stack.splice(this.#stack.indexOf(root));
     const cyclic = members.length > 1 || root.selfLoop;
     for (const m of members) {
+      // Stryker disable next-line CallExpression: a finished cell is in #done, and cell() reads #done first
       this.#visits.delete(m.id);
       this.#done.set(m.id, cyclic ? cycleError(m.column, m.key) : m.result);
     }

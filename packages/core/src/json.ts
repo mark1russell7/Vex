@@ -25,6 +25,7 @@ const isPlainJson = (u: unknown): boolean => {
  * This function gives the JSON text of an expression. A literal that is a domain value needs a domain with
  * `encode`. A literal that is not JSON data and has no such domain gives the error `#VALUE!`.
  */
+// Stryker disable next-line ArrayDeclaration: a list with a value that is not a domain encodes no value
 export function serialize(e: Expr, domains: readonly AnyDomain[] = []): Result<string> {
   const failure: { message: string }[] = [];
   const replacer = function (this: unknown, k: string, value: unknown): unknown {
@@ -53,6 +54,7 @@ const isEncoded = (u: unknown): u is EncodedValue =>
   typeof u === "object" && u !== null && (u as { $vex?: unknown }).$vex === "domain" && typeof (u as { domain?: unknown }).domain === "string";
 
 /** This function reads an expression from JSON text. It checks the whole tree. */
+// Stryker disable next-line ArrayDeclaration: a list with a value that is not a domain decodes no value
 export function parse(text: string, domains: readonly AnyDomain[] = []): Result<Expr> {
   let raw: unknown;
   const failure: string[] = [];

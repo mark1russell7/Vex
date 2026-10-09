@@ -50,9 +50,11 @@ class RecordSpace<K extends string, O> implements Space<K, O> {
   get(k: string): O | undefined {
     return this.#records.get(k);
   }
+  // Stryker disable next-line BlockStatement: the body gives undefined, and an empty body gives undefined too
   coords(): readonly number[] | undefined {
     return undefined;
   }
+  // Stryker disable next-line BlockStatement: the body gives undefined, and an empty body gives undefined too
   keyAt(): K | undefined {
     return undefined;
   }
@@ -79,7 +81,7 @@ class ArraySpace<O> implements Space<ArrayKey, O> {
     return this.has(k) ? [Number(k)] : undefined;
   }
   keyAt(coords: readonly number[]): ArrayKey | undefined {
-    const k = coords.join(",");
+    const k = String(coords[0]);
     return coords.length === 1 && this.has(k) ? k : undefined;
   }
 }
@@ -145,6 +147,8 @@ class TreeSpace<K extends string, O> implements Space<K, O> {
     const children = new Map<string, K[]>(this.keys.map((k) => [k, []]));
     for (const k of this.keys) {
       const p = parentOf.get(k);
+      // Each parent is a key, so its list exists, and the test of p only skips the roots.
+      // Stryker disable next-line ConditionalExpression,OptionalChaining: a root has no list to push to
       if (p !== undefined) children.get(p)?.push(k);
     }
     this.#children = new Map([...children].map(([k, c]) => [k, Object.freeze(c)]));
@@ -156,9 +160,11 @@ class TreeSpace<K extends string, O> implements Space<K, O> {
   get(k: string): O | undefined {
     return this.#records.get(k);
   }
+  // Stryker disable next-line BlockStatement: the body gives undefined, and an empty body gives undefined too
   coords(): readonly number[] | undefined {
     return undefined;
   }
+  // Stryker disable next-line BlockStatement: the body gives undefined, and an empty body gives undefined too
   keyAt(): K | undefined {
     return undefined;
   }
@@ -208,7 +214,7 @@ export function applyMove(s: Space, at: Position, m: Move): Result<string> {
       return s.has(m.key) ? ok(m.key) : refError("unknown-key", `the space has no key "${m.key}"`);
     case "index": {
       const k = s.keys[m.i];
-      return m.i >= 0 && k !== undefined ? ok(k) : refError("out-of-bounds", `the space has no key at index ${m.i}`);
+      return k !== undefined ? ok(k) : refError("out-of-bounds", `the space has no key at index ${m.i}`);
     }
     case "other": {
       if (s.keys.length !== 2) return refError("not-a-pair", `"other" needs a space with 2 keys, but this space has ${s.keys.length}`);

@@ -127,9 +127,9 @@ export function isMove(u: unknown): u is Move {
     case "key":
       return typeof u["key"] === "string";
     case "index":
-      return typeof u["i"] === "number" && Number.isInteger(u["i"]);
+      return Number.isInteger(u["i"]);
     case "offset":
-      return Array.isArray(u["d"]) && u["d"].every((n) => typeof n === "number" && Number.isInteger(n));
+      return Array.isArray(u["d"]) && u["d"].every((n) => Number.isInteger(n));
     case "other":
     case "origin":
     case "parent":
@@ -198,7 +198,7 @@ export function children(e: Expr): readonly Expr[] {
     case "rec":
       return Object.values(e.fields);
     case "each":
-      return e.axis.t === "where" ? [e.body, ...whereTests(e.axis)] : [e.body];
+      return [e.body, ...whereTests(e.axis)];
     case "lit":
     case "ref":
     case "var":

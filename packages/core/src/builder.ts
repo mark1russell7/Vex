@@ -373,7 +373,9 @@ interface RuntimeOptions {
 
 /** This function gives the run-time form of the options. A typed free function gets the values that the types promise. */
 const runtimeOptions = (options: VexOptions): RuntimeOptions => ({
+  // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
   ...(options.fns === undefined ? {} : { fns: options.fns as Readonly<Record<string, FreeFn>> }),
+  // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
   ...(options.extensions === undefined ? {} : { extensions: options.extensions }),
 });
 
@@ -393,9 +395,9 @@ interface State {
   readonly depth: number;
 }
 
-const isArg = (u: unknown): u is Arg<unknown> => typeof u === "object" && u !== null && (u as { kind?: unknown }).kind === "vex.arg";
-const isChainLike = (u: unknown): u is { readonly program: Expr } =>
-  typeof u === "object" && u !== null && ((u as { kind?: unknown }).kind === "vex.chain" || (u as { kind?: unknown }).kind === "vex.list-chain");
+const kindOf = (u: unknown): unknown => (u as { kind?: unknown } | null | undefined)?.kind;
+const isArg = (u: unknown): u is Arg<unknown> => kindOf(u) === "vex.arg";
+const isChainLike = (u: unknown): u is { readonly program: Expr } => kindOf(u) === "vex.chain" || kindOf(u) === "vex.list-chain";
 
 /** This function turns a builder argument into an expression. A bare string is a field reference at `addr`. */
 function toExpr(a: unknown, addr: readonly Move[]): Expr {
@@ -435,7 +437,9 @@ class ChainImpl {
       space: env.space,
       origin: k,
       domains: env.domains,
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(env.options.fns === undefined ? {} : { fns: env.options.fns }),
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(env.options.extensions === undefined ? {} : { extensions: env.options.extensions }),
     };
   }
@@ -640,8 +644,7 @@ class RootImpl {
 
 class SheetRootImpl extends RootImpl {
   cell(column: string, at?: string | Addr): Arg<unknown> {
-    const addr: Addr = at === undefined ? [] : typeof at === "string" ? [keyMove(at)] : at;
-    return argToken(cellRef(column, addr));
+    return argToken(cellRef(column, typeof at === "string" ? [keyMove(at)] : at));
   }
 }
 
@@ -668,6 +671,7 @@ class SheetImpl {
       space: s,
       domains,
       ...(options.fns === undefined ? {} : { fns: options.fns }),
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(options.extensions === undefined ? {} : { extensions: options.extensions }),
     });
   }

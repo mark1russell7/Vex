@@ -1,9 +1,9 @@
-// The site of Vex: the docs, the living spec and the Lab. GitHub Pages serves it at /vex/.
+// The site of Vex: the docs, the living spec and the Lab. GitHub Pages serves it at /Vex/.
 import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 
-const base = process.env.SITE_BASE ?? "/vex";
+const base = process.env.SITE_BASE ?? "/Vex";
 
 export default defineConfig({
   site: "https://mark1russell7.github.io",
@@ -15,8 +15,8 @@ export default defineConfig({
       description: "Typed spreadsheet formulas over domain objects.",
       logo: { src: "./src/assets/mark.svg", replacesTitle: false },
       favicon: "/favicon.svg",
-      social: [{ icon: "github", label: "GitHub", href: "https://github.com/mark1russell7/vex" }],
-      editLink: { baseUrl: "https://github.com/mark1russell7/vex/edit/main/packages/site/" },
+      social: [{ icon: "github", label: "GitHub", href: "https://github.com/mark1russell7/Vex" }],
+      editLink: { baseUrl: "https://github.com/mark1russell7/Vex/edit/main/packages/site/" },
       customCss: [
         "@fontsource-variable/atkinson-hyperlegible-next",
         "@fontsource-variable/atkinson-hyperlegible-mono",

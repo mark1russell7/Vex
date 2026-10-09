@@ -2,20 +2,20 @@
 
 > Vex is a TypeScript library for typed spreadsheet formulas over domain objects. A Vex program evaluates at one key of a space of records. It reads fields relative to that key, combines them with the ops of domains (for example 2D vectors), and gives a value or an error value with a code like #REF! or #N/A. Axes evaluate a body at related keys (all, others, other, neighbors, where), and reductions combine the results. A program is plain JSON data.
 
-To write a Vex program as data, follow the JSON Schema of the IR: https://mark1russell7.github.io/vex/ir.schema.json. Then check the program with `parse(text, domains)` of `@mark1russell7/vex`, and evaluate it with `evaluate(expr, { space, origin, domains })`. `explain` gives a trace of each node, with the reads of each reference. A program does not throw: each failure is an error value with a code, a kind, a message, the path of its node, the origin and the focus.
+To write a Vex program as data, follow the JSON Schema of the IR: https://mark1russell7.github.io/Vex/ir.schema.json. Then check the program with `parse(text, domains)` of `@mark1russell7/vex`, and evaluate it with `evaluate(expr, { space, origin, domains })`. `explain` gives a trace of each node, with the reads of each reference. A program does not throw: each failure is an error value with a code, a kind, a message, the path of its node, the origin and the focus.
 
 ## Docs
 
-- [Tour](https://mark1russell7.github.io/vex/learn/tour/): the builder, one call at a time
-- [Concepts](https://mark1russell7.github.io/vex/learn/concepts/): space, origin, focus, address, axis, domain, result
-- [Axes](https://mark1russell7.github.io/vex/learn/axes/): the relations between positions, and the reductions
-- [Sheets and cycles](https://mark1russell7.github.io/vex/learn/sheets/): named columns that read each other, and #CYCLE!
-- [Error values](https://mark1russell7.github.io/vex/learn/errors/): the codes, and how errors go up the tree
-- [The IR](https://mark1russell7.github.io/vex/reference/ir/): the kinds of expression, the moves, the axes
-- [The API](https://mark1russell7.github.io/vex/reference/api/): the functions and the types of the packages
-- [The specification](https://mark1russell7.github.io/vex/spec/): each rule with its requirement ID and its test status
+- [Tour](https://mark1russell7.github.io/Vex/learn/tour/): the builder, one call at a time
+- [Concepts](https://mark1russell7.github.io/Vex/learn/concepts/): space, origin, focus, address, axis, domain, result
+- [Axes](https://mark1russell7.github.io/Vex/learn/axes/): the relations between positions, and the reductions
+- [Sheets and cycles](https://mark1russell7.github.io/Vex/learn/sheets/): named columns that read each other, and #CYCLE!
+- [Error values](https://mark1russell7.github.io/Vex/learn/errors/): the codes, and how errors go up the tree
+- [The IR](https://mark1russell7.github.io/Vex/reference/ir/): the kinds of expression, the moves, the axes
+- [The API](https://mark1russell7.github.io/Vex/reference/api/): the functions and the types of the packages
+- [The specification](https://mark1russell7.github.io/Vex/spec/): each rule with its requirement ID and its test status
 
 ## Optional
 
-- [The Lab](https://mark1russell7.github.io/vex/lab/): edit a program as JSON and evaluate it
-- [The source](https://github.com/mark1russell7/vex)
+- [The Lab](https://mark1russell7.github.io/Vex/lab/): edit a program as JSON and evaluate it
+- [The source](https://github.com/mark1russell7/Vex)

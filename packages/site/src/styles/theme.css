@@ -292,6 +292,8 @@ header.header {
 }
 .vx-hero-legend {
   flex: 1 1 16rem;
+  /* The legend and the list text have different lengths. A fixed minimum keeps the page still when the text changes. */
+  min-height: 2lh;
   color: var(--color-ink-secondary);
 }
 .vx-hero-stats {

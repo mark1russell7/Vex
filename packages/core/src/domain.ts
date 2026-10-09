@@ -89,7 +89,8 @@ export const isOpName = (name: string): boolean => name.length > 0 && !FORBIDDEN
  * It stops at `Object.prototype` and `Function.prototype`, so inherited members (for example `toString`) are not ops.
  */
 export function findMethod(self: unknown, name: string): ((...args: unknown[]) => unknown) | undefined {
-  if (!isOpName(name) || self === null || self === undefined) return undefined;
+  if (!isOpName(name)) return undefined;
+  // A primitive has no own methods. The loop below stops at null, so null needs no test here.
   if (typeof self !== "object" && typeof self !== "function") return undefined;
   let o: object | null = self;
   while (o !== null && o !== Object.prototype && o !== Function.prototype) {

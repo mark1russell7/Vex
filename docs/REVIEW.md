@@ -878,6 +878,10 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 - D9 waits for the owner: the rename of the repository needs a permission that the agent does not have. The branch `rename-vex` has the changes of the URLs for after the rename.
 - §13 done: the local Node is 24 (LTS). Jqy's `dump:src` works, and lag does not track `.claude/settings.local.json`. render's `roadmap` branch was already in `main`.
 - The research reports in `docs/research/` are in the repository, without local paths and without details of private repositories. The lineage report (03) is mostly about private repositories, so it stays local, and its links in this document work only in a local copy.
+- Polish done: `withOptions({ fns })` gives the types of the free functions to the chain. `call(name, ...args)` applies one with type checks (spec BUILD.CALL and TYPE.CALL).
+- Polish done: `sheet().declare<T>()` gives types to a column that reads itself or a later column (spec SHEET.DECLARE).
+- Polish done: the root `vitest.config.ts` measures the three published packages. Each package has the gates 98, 96, 98 and 98.
+- Polish done: the mutation lane fails under 95 %. The contract tests (`contracts.test.ts`) check the exact messages and the inputs at the edges.
 
 ---
 

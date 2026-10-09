@@ -266,11 +266,55 @@ describe("the other members of the builder", () => {
 
   it("withOptions() gives the free functions and the extension handlers to the interpreter", () => {
     const root = vex(Num)
-      .withOptions({ fns: { half: (n: unknown) => Number(n) / 2 }, extensions: { seven: () => ok(7) } })
+      .withOptions({ fns: { half: (n: number) => n / 2 }, extensions: { seven: () => ok(7) } })
       .over(space.record({ A }));
-    // A free function has no type in the chain, so the test calls it through the untyped proxy.
-    const untyped = root.from("weight")._ as unknown as Readonly<Record<string, () => { result(k: "A"): Result<unknown> }>>;
-    expect(untyped["half"]?.().result("A")).toEqual(ok(1));
+    expect(root.from("weight").call("half").result("A")).toEqual(ok(1));
+    expect(root.start(root.ext<number>("seven")).result("A")).toEqual(ok(7));
+  });
+});
+
+describe("free functions (BUILD.CALL)", () => {
+  const fns = {
+    half: (n: number): number => n / 2,
+    label: (n: number, unit: string): string => `${n}${unit}`,
+    shout: (s: string): string => s.toUpperCase(),
+    plus: (a: number, b: number): number => a + b + 1000,
+    boom: (_n: number): number => {
+      throw new Error("boom");
+    },
+  };
+  const root = vex(Num).withOptions({ fns }).over(space.record({ A, B }));
+
+  it("BUILD.CALL: call applies a free function to the current value, with typed arguments and a typed result", () => {
+    const half = root.from("weight").call("half");
+    expectTypeOf(half.result("A")).toEqualTypeOf<Result<number>>();
+    expect(half.all().values()).toEqual([1, 1.5]);
+    expect(half._.times(10).all().values()).toEqual([10, 15]);
+    const label = root.from("weight").call("label", "name");
+    expectTypeOf(label.result("A")).toEqualTypeOf<Result<string>>();
+    expect(label.all().values()).toEqual(["2a", "3b"]);
+    expect(value(root.from("weight").call("label", root.lit("px")).result("B"))).toBe("3px");
+    expect(value(root.from("name").call("shout").result("A"))).toBe("A");
+    expect(root.from("weight").call("half").program).toEqual({ tag: "app", op: "half", args: [{ tag: "ref", path: ["weight"] }] });
+  });
+
+  it("BUILD.CALL: a free function that throws gives #CALC!, and a domain op with the same name wins", () => {
+    expect(error(root.from("weight").call("boom").result("A")).code).toBe("#CALC!");
+    // Num has an op "plus", so the interpreter takes it, not the free function.
+    expect(value(root.from("weight").call("plus", 1).result("A"))).toBe(3);
+  });
+
+  it("TYPE.CALL: the types accept only the free functions whose first parameter accepts the current value", () => {
+    const weight = root.from("weight");
+    // @ts-expect-error -- there is no free function "nope"
+    weight.call("nope");
+    // @ts-expect-error -- "shout" takes a string, and the current value is a number
+    weight.call("shout");
+    // @ts-expect-error -- the second parameter of "label" is a string, not a number
+    weight.call("label", 5);
+    // @ts-expect-error -- a root without withOptions has no free functions
+    vex(Num).over(space.record({ A })).from("weight").call("half");
+    expect(weight.call("half").program.tag).toBe("app");
   });
 });
 

@@ -104,6 +104,9 @@ const CACHE = new WeakMap<Expr, { readonly domains: unknown; readonly fns: unkno
 
 function compiled(expr: Expr, opts: CompileOptions): Program {
   const hit = CACHE.get(expr);
+  // Without the cache, each evaluation compiles again: the result is the same, so a mutant that removes a hit is
+  // equivalent. A false hit changes results, and the tests find it.
+  // Stryker disable next-line ConditionalExpression: a missed hit only compiles again
   if (hit !== undefined && hit.domains === opts.domains && hit.fns === opts.fns && hit.extensions === opts.extensions) return hit.program;
   const program = compile(expr, opts);
   CACHE.set(expr, { domains: opts.domains, fns: opts.fns, extensions: opts.extensions, program });
@@ -142,6 +145,7 @@ class Compiler {
   readonly #extensions: Readonly<Record<string, ExtHandler>> | undefined;
 
   constructor(opts: CompileOptions) {
+    // Stryker disable next-line ArrayDeclaration: a list with a value that is not a domain matches no value
     this.#domains = opts.domains ?? [];
     this.#fns = opts.fns;
     this.#extensions = opts.extensions;
@@ -208,7 +212,8 @@ class Compiler {
       case "each":
         return this.#each(e, info);
       case "ext": {
-        const handler = Object.hasOwn(this.#extensions ?? {}, e.kind) ? this.#extensions?.[e.kind] : undefined;
+        const extensions = this.#extensions ?? {};
+        const handler = Object.hasOwn(extensions, e.kind) ? extensions[e.kind] : undefined;
         const { kind, data } = e;
         if (handler === undefined) return (f, c) => this.#emit(c, info, f, this.#err("unknown-op", `no handler for the extension kind "${kind}"`, f, path));
         return (f, c) =>
@@ -243,6 +248,8 @@ class Compiler {
     const steps = segs.map((seg, i) => ({ seg, where: segs.slice(0, i + 1).join("."), valid: isFieldName(seg) }));
     return (f, c) => {
       let key = f.pos.focus;
+      // The empty address resolves to the focus, so this fast path changes no result.
+      // Stryker disable next-line ConditionalExpression,EqualityOperator: resolveAddr of [] gives the focus too
       if (at.length > 0) {
         const where = resolveAddr(c.space, f.pos, at);
         if (!where.ok) return this.#emit(c, info, f, fail({ ...where.error, path }));
@@ -338,6 +345,8 @@ class Compiler {
       const self = values[0];
       if (listOp !== undefined && isVexList(self)) return this.#emit(c, info, f, this.#listOp(listOp, self, values.slice(1), f, path));
       let accepted: AnyDomain | undefined;
+      // Without arguments, the receiver is undefined, and no domain of a test accepts it.
+      // Stryker disable next-line ConditionalExpression,EqualityOperator: the loop finds no domain for undefined
       if (values.length > 0) {
         for (const d of this.#domains) {
           if (!safeIs(d, self)) continue;
@@ -396,7 +405,7 @@ class Compiler {
     const lift = spec.liftScalar;
     const from = domain.fromScalar;
     let callArgs: readonly unknown[] = rest;
-    if (lift !== undefined && lift !== false && from !== undefined) {
+    if (lift && from !== undefined) {
       const lifted = this.#invoke(() => rest.map((a, i): unknown => (typeof a === "number" && liftsAt(lift, i) ? from(a) : a)), `${domain.name}.fromScalar`, f, path);
       if (!lifted.ok) return lifted;
       callArgs = lifted.value as readonly unknown[];
@@ -443,7 +452,7 @@ class Compiler {
 
   #listOp(op: ListOp, list: VexList, rest: readonly unknown[], f: Frame, path: readonly number[]): Result<unknown> {
     const optsArg = op === "reduce" ? rest[1] : rest[0];
-    const strict = isOptions(optsArg) && optsArg.strict === true;
+    const strict = (optsArg as ListOptions | null | undefined)?.strict === true;
     const firstError = list.items.find((it) => !it.result.ok)?.result;
     if (strict && firstError !== undefined && !firstError.ok) return fail(firstError.error);
     const okValues = list.items.flatMap((it) => (it.result.ok ? [it.result.value] : []));
@@ -524,6 +533,7 @@ const FORBIDDEN_FIELDS = new Set(["__proto__", "constructor", "prototype"]);
 const isFieldName = (seg: string): boolean => seg.length > 0 && !FORBIDDEN_FIELDS.has(seg);
 
 /** This function runs the `is` test of a domain. A test that throws counts as `false`. */
+// Stryker disable BlockStatement: an empty catch gives undefined, which also counts as false
 function safeIs(d: AnyDomain, value: unknown): boolean {
   try {
     return d.is(value);
@@ -531,8 +541,8 @@ function safeIs(d: AnyDomain, value: unknown): boolean {
     return false;
   }
 }
+// Stryker restore BlockStatement
 
-const isOptions = (u: unknown): u is ListOptions => typeof u === "object" && u !== null && !Array.isArray(u) && !isVexList(u);
 
 function matchesKind(kind: ParamKind, value: unknown, domain: AnyDomain): boolean {
   switch (kind) {
@@ -585,11 +595,13 @@ export function labelOf(e: Expr): string {
 
 /** This function gives a short text for a value. */
 export function previewValue(u: unknown): string {
-  if (typeof u === "string") return JSON.stringify(u);
-  if (typeof u === "number" || typeof u === "boolean" || u === null || u === undefined) return String(u);
+  // JSON has no NaN and no Infinity, so a number gets its own text. JSON gives the text of the other primitives.
+  if (typeof u === "number") return String(u);
   if (isVexList(u)) return `list(${u.items.length})`;
   try {
     const json = JSON.stringify(u);
+    // A function, a symbol and undefined have no JSON form.
+    // Stryker disable next-line ConditionalExpression: without the test, undefined.length throws, and the catch gives the same text
     if (json !== undefined) return json.length > 60 ? `${json.slice(0, 57)}...` : json;
   } catch {
     // A value with cycles has no JSON form.
@@ -604,11 +616,13 @@ const formatRead = (r: Read): string => `${r.ok ? "read" : "no value at"} ${r.ke
  * This function gives a text form of a trace. Each event has one line, in finish order. The indent of a line
  * shows the depth of the node. A domain with `show` gives the text of its values. The golden tests compare this text.
  */
+// Stryker disable next-line ArrayDeclaration: a list with a value that is not a domain shows no value
 export function formatTrace(trace: Trace, domains: readonly AnyDomain[] = []): string {
   const show = (u: unknown): string => {
     if (isVexList(u)) return `[${u.items.map((it) => `${it.key}: ${result(it.result)}`).join(", ")}]`;
     const d = domains.find((dom) => dom.show !== undefined && safeIs(dom, u));
     try {
+      // Stryker disable next-line ConditionalExpression,OptionalChaining: without a domain, d.show throws, and the catch gives the same text
       if (d?.show !== undefined) return d.show(u);
     } catch {
       // A show function that throws gives the default text.

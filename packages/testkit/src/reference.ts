@@ -165,6 +165,8 @@ function listOp(op: string, items: readonly RefItem[], rest: readonly unknown[],
   const o = op === "reduce" ? rest[1] : rest[0];
   const strict = typeof o === "object" && o !== null && (o as { strict?: unknown }).strict === true;
   const firstBad = items.find((it) => !it.result.ok);
+  // An item that is not ok has an error, so the fallback code is defensive.
+  /* v8 ignore next -- @preserve */
   if (strict && firstBad !== undefined) return err(firstBad.result.error?.code ?? "#CALC!");
   const vs = items.filter((it) => it.result.ok).map((it) => it.result.value);
   const nums: readonly number[] | undefined = vs.every((x): x is number => typeof x === "number") ? vs : undefined;
@@ -212,6 +214,8 @@ function listOp(op: string, items: readonly RefItem[], rest: readonly unknown[],
       }
       return val(acc);
     }
+    // app() calls listOp only with a name of LIST_OPS, so this case is defensive.
+    /* v8 ignore next 2 -- @preserve */
     default:
       return err("#NAME?");
   }

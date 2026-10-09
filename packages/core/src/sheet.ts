@@ -54,7 +54,7 @@ interface Visit {
   readonly key: string;
   readonly index: number;
   low: number;
-  selfLoop: boolean;
+  reread: boolean;
   result: Result<unknown>;
 }
 
@@ -64,9 +64,11 @@ export class SheetRun {
   readonly #done = new Map<string, Result<unknown>>();
   // The cells on the stack of the search: started, but their component is not finished.
   readonly #visits = new Map<string, Visit>();
+  // Stryker disable next-line ArrayDeclaration: the search never reads below the root of a component
   readonly #stack: Visit[] = [];
   // The cell whose formula is in evaluation. At the top level, it is a placeholder that is not a cell.
-  #top: Visit = { id: "", column: "", key: "", index: -1, low: -1, selfLoop: false, result: cycleError("", "") };
+  // Stryker disable next-line all: the placeholder is not a cell, so the search reads none of its fields
+  #top: Visit = { id: "", column: "", key: "", index: -1, low: -1, reread: false, result: cycleError("", "") };
   #next = 0;
 
   constructor(columns: ReadonlyMap<string, Expr>, opts: SheetOptions) {
@@ -89,16 +91,18 @@ export class SheetRun {
     const caller = this.#top;
     const seen = this.#visits.get(id);
     if (seen !== undefined) {
-      // A read of a cell that is not finished: the caller and this cell are on one cycle.
+      // A read of a cell that is not finished: the caller and this cell are on one cycle. The cell is on the
+      // stack of the search, so it is in the component of the caller. Thus a component with one cell is cyclic
+      // only if that cell reads itself.
       caller.low = Math.min(caller.low, seen.index);
-      if (caller === seen) seen.selfLoop = true;
+      seen.reread = true;
       return cycleError(column, key);
     }
     const program = this.#columns.get(column);
     if (program === undefined) return fail(vexError("unbound", `the sheet has no column "${column}"`, { origin: key, focus: key }));
 
     const n = this.#next++;
-    const visit: Visit = { id, column, key, index: n, low: n, selfLoop: false, result: cycleError(column, key) };
+    const visit: Visit = { id, column, key, index: n, low: n, reread: false, result: cycleError(column, key) };
     this.#visits.set(id, visit);
     this.#stack.push(visit);
     this.#top = visit;
@@ -113,8 +117,9 @@ export class SheetRun {
   /** This method takes the component of `root` from the stack, and sets the final result of each of its cells. */
   #finish(root: Visit): void {
     const members = this.#stack.splice(this.#stack.indexOf(root));
-    const cyclic = members.length > 1 || root.selfLoop;
+    const cyclic = members.length > 1 || root.reread;
     for (const m of members) {
+      // Stryker disable next-line CallExpression: a finished cell is in #done, and cell() reads #done first
       this.#visits.delete(m.id);
       this.#done.set(m.id, cyclic ? cycleError(m.column, m.key) : m.result);
     }

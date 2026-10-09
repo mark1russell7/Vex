@@ -134,6 +134,7 @@ An expression is plain JSON data. It has one of these kinds.
 ## 8. The builder
 
 - **[BUILD.IMMUTABLE]** A builder call gives a new chain. An earlier chain does not change.
+- **[BUILD.CALL]** `call(name, ...args)` applies a free function of `withOptions`: the expression is `app(name, value, ...args)`. A domain op with the same name for the value comes first at run time.
 - **[TYPE.FROM]** `from(p)` accepts only the fields of the record type, and the chain value has the type of the field.
 - **[TYPE.OPS]** `._` has only the ops of the domain of the current value, with the parameter types of each op.
 - **[TYPE.LIFT]** A number argument for a domain parameter needs `liftScalar` on the op.
@@ -142,6 +143,7 @@ An expression is plain JSON data. It has one of these kinds.
 - **[TYPE.KEYS]** Evaluation accepts only the keys of the space.
 - **[TYPE.LIST]** A number reduction needs a list of numbers.
 - **[TYPE.NO-ANY]** No value type of the builder is `any`.
+- **[TYPE.CALL]** `call` accepts only the names of the free functions whose first parameter accepts the current value. The other arguments have the types of the other parameters, and the chain value has the return type of the function.
 
 ## 9. Sheets
 
@@ -149,6 +151,7 @@ A sheet has named columns of formulas over a space. A cell is one column at one 
 
 - **[SHEET.CELL]** A cell reference resolves its address from the focus, then gives the result of that cell. An unknown column gives `#NAME?`, and an address outside the space gives `#REF!`.
 - **[SHEET.RECURRENCE]** A column can read itself at another key. A recurrence over the key order, for example a running total, gives the same result as a loop.
+- **[SHEET.DECLARE]** `declare<T>()` gives the types of columns before their formulas. A formula can read a declared column with its type, also the column itself or a later column. The formula of a declared column must give a value of the declared type. `declare` has no effect at run time.
 - **[SHEET.CYCLE]** Each cell on a cycle of cell references gives `#CYCLE!`. A cycle can contain one cell, or cells at different keys.
 - **[SHEET.ORDER]** The result of a cell does not depend on the order of the evaluations. `ifError` does not hide a cycle from the cells on that cycle.
 

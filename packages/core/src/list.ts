@@ -17,7 +17,7 @@ export const vexList = <T>(items: readonly ListItem<T>[]): VexList<T> => Object.
 
 /** This function tells if a value is a Vex list. */
 export const isVexList = (u: unknown): u is VexList =>
-  typeof u === "object" && u !== null && (u as { kind?: unknown }).kind === "vex.list" && Array.isArray((u as { items?: unknown }).items);
+  (u as { kind?: unknown } | null | undefined)?.kind === "vex.list" && Array.isArray((u as { items?: unknown }).items);
 
 /** The name of a core list op. */
 export type ListOp = "count" | "sum" | "min" | "max" | "mean" | "any" | "all" | "none" | "values" | "keys" | "reduce" | "first" | "errors";

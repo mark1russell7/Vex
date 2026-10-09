@@ -112,12 +112,37 @@ export type ArgInput<P, Ctx extends ChainContext, Lift extends boolean> =
 
 type MapArgs<P extends readonly unknown[], Ctx extends ChainContext, Lift extends boolean> = { [I in keyof P]: ArgInput<P[I], Ctx, Lift> };
 
-/** The static context of a chain: its domains, its key type and its record type. */
+/** A table of free functions. The first parameter of a function gets the current value of the chain. */
+export type FnTable = Readonly<Record<string, (...args: never[]) => unknown>>;
+
+/** The free functions of a builder without `withOptions`: none, so `call` accepts no name. */
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- an empty table is the intent.
+export type NoFns = Record<never, never>;
+
+/** The static context of a chain: its domains, its key type, its record type and its free functions. */
 export interface ChainContext {
   readonly domains: readonly AnyDomain[];
   readonly keys: string;
   readonly record: unknown;
+  readonly fns?: FnTable;
 }
+
+type FnsOf<Ctx extends ChainContext> = NonNullable<Ctx["fns"]>;
+type FnParams<F> = F extends (...args: infer P) => unknown ? P : never;
+type FirstParam<P> = P extends readonly [infer A, ...unknown[]] ? A : unknown;
+type RestParams<P> = P extends readonly [unknown, ...infer R] ? R : [];
+
+/** The names of the free functions whose first parameter accepts a value of type `T`. */
+export type CallableFns<Ctx extends ChainContext, T> = {
+  [K in keyof FnsOf<Ctx>]: [T] extends [FirstParam<FnParams<FnsOf<Ctx>[K]>>] ? K : never;
+}[keyof FnsOf<Ctx>] &
+  string;
+
+/** The inputs for the parameters of the free function `N` after its first parameter. */
+export type CallArgs<Ctx extends ChainContext, N extends keyof FnsOf<Ctx>> = MapArgs<RestParams<FnParams<FnsOf<Ctx>[N]>>, Ctx, false>;
+
+/** The return type of the free function `N`. */
+export type CallReturn<Ctx extends ChainContext, N extends keyof FnsOf<Ctx>> = FnsOf<Ctx>[N] extends (...args: never[]) => infer R ? R : unknown;
 
 /** The ops section `._` of a chain whose value has domain `Dm`. */
 export type OpsProxy<Ctx extends ChainContext, Dm> = {
@@ -157,6 +182,11 @@ export interface ChainBase<Ctx extends ChainContext, T> {
   parent(): ChainOf<Ctx, T>;
   /** This method uses `fallback` when the chain gives an error. */
   ifError<U>(fallback: ArgInput<U, Ctx, false> | T): ChainOf<Ctx, T | U>;
+  /**
+   * This method applies the free function `name` of `withOptions`. The function gets the current value as its first
+   * argument, then `args`. The types accept only the functions whose first parameter accepts the current value.
+   */
+  call<N extends CallableFns<Ctx, T>>(name: N, ...args: CallArgs<Ctx, N>): ChainOf<Ctx, CallReturn<Ctx, N>>;
   /** This method evaluates each branch with the current value, and gives a record of the results. */
   fork<const B extends Readonly<Record<string, (c: ChainOf<Ctx, T>) => ChainBase<Ctx, unknown>>>>(branches: B): ChainOf<Ctx, { readonly [N in keyof B]: ValueOf<ReturnType<B[N]>> }>;
   /** This method binds names for the body. The body gets a variable token for each name. */
@@ -288,9 +318,20 @@ export interface SheetRow<K extends string, Cols> {
  * other columns with `cell`. Each evaluation evaluates a cell once, and each cell on a cycle of references gives
  * `#CYCLE!`. A sheet is immutable: `column` gives a new sheet.
  */
-export interface Sheet<Ctx extends ChainContext, Cols> {
-  /** This method gives a new sheet with one more column. The formula gets a root with `cell`. */
-  column<const N extends string, C extends ChainBase<Ctx, unknown>>(name: N, formula: (r: SheetRoot<Ctx, Cols>) => C): Sheet<Ctx, Cols & { readonly [P in N]: ValueOf<C> }>;
+export interface Sheet<Ctx extends ChainContext, Cols, Decl = object> {
+  /**
+   * This method gives a new sheet with one more column. The formula gets a root with `cell`. If `declare` gave the
+   * column a type, the formula must give a value of that type.
+   */
+  column<const N extends string, C extends ChainBase<Ctx, DeclaredType<Decl, N>>>(
+    name: N,
+    formula: (r: SheetRoot<Ctx, Cols & Decl>) => C,
+  ): Sheet<Ctx, Cols & { readonly [P in N]: ValueOf<C> }, Decl>;
+  /**
+   * This method gives the types of columns before their formulas. A formula can then read a declared column with
+   * `cell` and its type: the column itself (a recurrence) or a later column. It has no effect at run time.
+   */
+  declare<D extends Readonly<Record<string, unknown>>>(): Sheet<Ctx, Cols, Decl & D>;
   /** The program of each column. */
   readonly columns: Readonly<Record<string, Expr>>;
   /** This method evaluates one cell, and gives the error if there is one. */
@@ -303,28 +344,45 @@ export interface Sheet<Ctx extends ChainContext, Cols> {
   table(): readonly SheetRow<Ctx["keys"], Cols>[];
 }
 
+/** The declared type of the column `N`, or `unknown` for a column without a declaration. */
+export type DeclaredType<Decl, N extends string> = N extends keyof Decl ? Decl[N] : unknown;
+
 /** The options of the builder. */
-export interface VexOptions {
-  /** Free function ops. */
-  readonly fns?: Readonly<Record<string, FreeFn>>;
+export interface VexOptions<F extends FnTable = FnTable> {
+  /** Free function ops. A chain applies them with `call`. */
+  readonly fns?: F;
   /** Handlers of extension expression kinds. */
   readonly extensions?: Readonly<Record<string, ExtHandler>>;
 }
 
 /** The entry point for a list of domains. */
-export interface VexEntry<Dms extends readonly AnyDomain[]> {
+export interface VexEntry<Dms extends readonly AnyDomain[], F extends FnTable = NoFns> {
   /** This method gives the root of the builder for a space. */
-  over<K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O> }>;
+  over<K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O>; readonly fns: F }>;
   /** The domains. */
   readonly domains: Dms;
 }
 
 // ---------------------------------------------------------------- run time
 
+/** The options as the interpreter takes them: free functions get untyped arguments at run time. */
+interface RuntimeOptions {
+  readonly fns?: Readonly<Record<string, FreeFn>>;
+  readonly extensions?: Readonly<Record<string, ExtHandler>>;
+}
+
+/** This function gives the run-time form of the options. A typed free function gets the values that the types promise. */
+const runtimeOptions = (options: VexOptions): RuntimeOptions => ({
+  // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
+  ...(options.fns === undefined ? {} : { fns: options.fns as Readonly<Record<string, FreeFn>> }),
+  // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
+  ...(options.extensions === undefined ? {} : { extensions: options.extensions }),
+});
+
 interface Env {
   readonly space: Space;
   readonly domains: readonly AnyDomain[];
-  readonly options: VexOptions;
+  readonly options: RuntimeOptions;
 }
 
 interface State {
@@ -337,9 +395,9 @@ interface State {
   readonly depth: number;
 }
 
-const isArg = (u: unknown): u is Arg<unknown> => typeof u === "object" && u !== null && (u as { kind?: unknown }).kind === "vex.arg";
-const isChainLike = (u: unknown): u is { readonly program: Expr } =>
-  typeof u === "object" && u !== null && ((u as { kind?: unknown }).kind === "vex.chain" || (u as { kind?: unknown }).kind === "vex.list-chain");
+const kindOf = (u: unknown): unknown => (u as { kind?: unknown } | null | undefined)?.kind;
+const isArg = (u: unknown): u is Arg<unknown> => kindOf(u) === "vex.arg";
+const isChainLike = (u: unknown): u is { readonly program: Expr } => kindOf(u) === "vex.chain" || kindOf(u) === "vex.list-chain";
 
 /** This function turns a builder argument into an expression. A bare string is a field reference at `addr`. */
 function toExpr(a: unknown, addr: readonly Move[]): Expr {
@@ -379,7 +437,9 @@ class ChainImpl {
       space: env.space,
       origin: k,
       domains: env.domains,
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(env.options.fns === undefined ? {} : { fns: env.options.fns }),
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(env.options.extensions === undefined ? {} : { extensions: env.options.extensions }),
     };
   }
@@ -428,6 +488,9 @@ class ChainImpl {
     return this.#move(parentMove);
   }
 
+  call(name: string, ...args: readonly unknown[]): ChainImpl {
+    return new ChainImpl({ ...this.#s, expr: app(name, this.#s.expr, ...args.map((a) => toExpr(a, this.#s.addr))) });
+  }
   ifError(fallback: unknown): ChainImpl {
     return new ChainImpl({ ...this.#s, expr: app("ifError", this.#s.expr, toExpr(fallback, this.#s.addr)) });
   }
@@ -581,8 +644,7 @@ class RootImpl {
 
 class SheetRootImpl extends RootImpl {
   cell(column: string, at?: string | Addr): Arg<unknown> {
-    const addr: Addr = at === undefined ? [] : typeof at === "string" ? [keyMove(at)] : at;
-    return argToken(cellRef(column, addr));
+    return argToken(cellRef(column, typeof at === "string" ? [keyMove(at)] : at));
   }
 }
 
@@ -596,6 +658,9 @@ class SheetImpl {
   get columns(): Readonly<Record<string, Expr>> {
     return Object.freeze(Object.fromEntries(this.#columns));
   }
+  declare(): SheetImpl {
+    return this;
+  }
   column(name: string, formula: (r: SheetRootImpl) => { readonly program: Expr }): SheetImpl {
     const program = formula(new SheetRootImpl(this.#env)).program;
     return new SheetImpl(this.#env, new Map([...this.#columns, [name, program]]));
@@ -605,7 +670,9 @@ class SheetImpl {
     return new SheetRun(this.#columns, {
       space: s,
       domains,
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(options.fns === undefined ? {} : { fns: options.fns }),
+      // Stryker disable next-line ConditionalExpression: an undefined option and an absent option are the same
       ...(options.extensions === undefined ? {} : { extensions: options.extensions }),
     });
   }
@@ -633,13 +700,20 @@ class SheetImpl {
  * This function gives the entry point of the builder for a list of domains. The interpreter finds the op of a
  * value in the first domain that accepts the value.
  */
-export function vex<const Dms extends readonly AnyDomain[]>(...domains: Dms): VexEntry<Dms> & { withOptions(options: VexOptions): VexEntry<Dms> } {
-  const make = (options: VexOptions): VexEntry<Dms> => ({
+export function vex<const Dms extends readonly AnyDomain[]>(
+  ...domains: Dms
+): VexEntry<Dms> & { withOptions<const F extends FnTable = NoFns>(options: VexOptions<F>): VexEntry<Dms, F> } {
+  const make = <F extends FnTable>(options: VexOptions<F>): VexEntry<Dms, F> => ({
     domains,
-    over: <K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O> }> =>
-      new RootImpl({ space: s, domains, options }) as unknown as Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O> }>,
+    over: <K extends string, O>(s: Space<K, O>): Root<{ readonly domains: Dms; readonly keys: K; readonly record: Merge<O>; readonly fns: F }> =>
+      new RootImpl({ space: s, domains, options: runtimeOptions(options) }) as unknown as Root<{
+        readonly domains: Dms;
+        readonly keys: K;
+        readonly record: Merge<O>;
+        readonly fns: F;
+      }>,
   });
-  return { ...make({}), withOptions: make };
+  return { ...make<NoFns>({}), withOptions: make };
 }
 
 /** The type of a domain value, from the domain object. */

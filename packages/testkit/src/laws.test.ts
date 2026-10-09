@@ -2,7 +2,7 @@ import { defineDomain, type OpTable } from "@mark1russell7/vex";
 import { Angle, AngleDomain, BoolDomain, Color, ColorDomain, NDVector, NDVectorDomain, NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { checkLaws } from "./laws.ts";
+import { assertLaws, checkLaws, structuralEqual } from "./laws.ts";
 
 const small = fc.integer({ min: -20, max: 20 });
 
@@ -44,6 +44,33 @@ describe("the law checker finds a false claim (V-016)", () => {
     name: "OldColor",
     is: (u: unknown): u is OldColor => u instanceof OldColor,
     ops: { add: { laws: ["commutative", "associative"] } },
+  });
+
+  it("structuralEqual compares primitives with Object.is and objects by their fields", () => {
+    expect(structuralEqual(Number.NaN, Number.NaN)).toBe(true);
+    expect(structuralEqual(1, "1")).toBe(false);
+    expect(structuralEqual(null, {})).toBe(false);
+    expect(structuralEqual(new Vec2(1, 2), { x: 1, y: 2 })).toBe(false);
+    expect(structuralEqual({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+    expect(structuralEqual({ a: 1, c: 2 }, { a: 1, b: 2 })).toBe(false);
+    expect(structuralEqual({ a: { b: [1, 2] } }, { a: { b: [1, 2] } })).toBe(true);
+  });
+
+  it("a law of an op that the values do not have fails", () => {
+    const NoMethod = defineDomain({ name: "NoMethod", is: (u: unknown): u is number => typeof u === "number", ops: { join: { laws: ["commutative"] } } });
+    const [result] = checkLaws(NoMethod, { arb: fc.integer(), numRuns: 5 });
+    expect(result?.ok).toBe(false);
+    expect(result?.message).toContain("Property failed");
+  });
+
+  it("assertLaws throws an error that names each failed law", () => {
+    const Bad = defineDomain({
+      name: "Bad",
+      is: (u: unknown): u is number => typeof u === "number",
+      ops: { minus: { fn: (a: number, b: number): number => a - b, laws: ["commutative"] } },
+    });
+    expect(() => assertLaws(Bad, { arb: fc.integer({ min: -9, max: 9 }), numRuns: 50 })).toThrow(/minus commutative/);
+    expect(() => assertLaws(NumDomain, { arb: fc.integer({ min: -9, max: 9 }), numRuns: 20 })).not.toThrow();
   });
 
   it("commutative fails with a counterexample, and associative holds", () => {

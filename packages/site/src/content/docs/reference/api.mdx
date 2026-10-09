@@ -24,7 +24,14 @@ nearest.program;      // : Expr
 nearest.at("A");      // => some(5)
 ```
 
-`vex(...domains)` gives the entry point for a list of domains. The interpreter finds the op of a value in the first domain that accepts the value. `vex(...).withOptions({ fns, extensions })` adds free functions and extension handlers.
+`vex(...domains)` gives the entry point for a list of domains. The interpreter finds the op of a value in the first domain that accepts the value. `vex(...).withOptions({ fns, extensions })` adds free functions and extension handlers. A chain applies a free function with `call`:
+
+```ts doctest
+const withHalf = vex(NumDomain).withOptions({ fns: { half: (n: number) => n / 2 } }).over(space.record({ A }));
+
+withHalf.from("weight").call("half").at("A"); // => some(1)
+withHalf.from("weight").call("half").at("A"); // : Optional<number>
+```
 
 ### The root
 
@@ -58,6 +65,7 @@ nearest.at("A");      // => some(5)
 | `with(binds, body)` | Binds names. The body gets a typed argument for each name. |
 | `fork(branches)` | Evaluates each branch with the current value, and gives a record |
 | `ifError(fallback)` | Gives `fallback` when the chain gives an error |
+| `call(name, ...args)` | Applies a free function of `withOptions` to the current value. The types accept only the functions whose first parameter accepts the value. |
 | `at(key)`, `value(key)`, `result(key)`, `explain(key)`, `all()` | Evaluates the chain |
 | `program` | The expression of the chain |
 
@@ -86,6 +94,7 @@ An axis gives a list chain. A list chain has the reductions `count`, `sum`, `mea
 | Member | What it does |
 |---|---|
 | `column(name, formula)` | Adds a column. The formula gets a root with `cell`, and gives a chain. |
+| `declare<T>()` | Gives the types of columns before their formulas. A formula can then read the column itself or a later column with its type. |
 | `r.cell(column, at)` | In a formula: an argument whose value is the column at the focus, at the key `at`, or at the address `at` |
 | `result(k, column)`, `at(k, column)`, `explain(k, column)` | Evaluates one cell |
 | `table()` | Evaluates each cell in key order, and gives one row for each key |

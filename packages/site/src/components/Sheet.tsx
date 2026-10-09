@@ -3,7 +3,7 @@
  * one formula, evaluated at each row. Select a computed cell to see its precedents. The fields that the
  * evaluation read are blue, and a failed read is red. This is the "Trace Precedents" idea of a spreadsheet.
  */
-import { evaluate, explain, type Read } from "@vex/core";
+import { evaluate, explain, type Read } from "@mark1russell7/vex";
 import { useMemo, useState, type ReactElement } from "react";
 import { errorHref, show, showResult } from "../lib/format.ts";
 import { PROGRAMS, programById } from "../lib/programs.ts";

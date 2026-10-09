@@ -5,7 +5,7 @@ description: How the site is made, the writing style, the disclosure and the lic
 
 ## How the site is made
 
-The site uses Astro and Starlight. The widgets are React islands, and each widget runs the real `@vex/core`, `@vex/domains` and `@vex/testkit` packages in your browser. The reference tables come from the code at the time of the build.
+The site uses Astro and Starlight. The widgets are React islands, and each widget runs the real `@mark1russell7/vex`, `@mark1russell7/vex-domains` and `@mark1russell7/vex-testkit` packages in your browser. The reference tables come from the code at the time of the build.
 
 GitHub Actions builds the site on each push to `main`. Before the build, the workflow runs the tests and writes a report. The specification page reads the report and shows the status of the tests of each requirement. Smoke tests open each page in Chromium, and a console error makes CI fail.
 

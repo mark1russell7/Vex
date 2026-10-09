@@ -3,8 +3,8 @@
  * `where` test counts the live neighbors of a cell, and Bool ops make the rule. Each generation evaluates the
  * rule at each cell: the start axis. Select a cell to change it.
  */
-import { space, vex } from "@vex/core";
-import { BoolDomain, NumDomain } from "@vex/domains";
+import { space, vex } from "@mark1russell7/vex";
+import { BoolDomain, NumDomain } from "@mark1russell7/vex-domains";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 type Cell = { readonly alive: boolean };

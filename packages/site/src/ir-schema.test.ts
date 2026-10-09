@@ -1,10 +1,10 @@
 /**
- * The JSON Schema of the IR in public/ir.schema.json, against the function isExpr of @vex/core. The two accept
+ * The JSON Schema of the IR in public/ir.schema.json, against the function isExpr of @mark1russell7/vex. The two accept
  * the same values, so a program that a model writes from the schema is a program that Vex accepts.
  */
 import { readFileSync } from "node:fs";
-import { isExpr, type Expr } from "@vex/core";
-import { arbExpr } from "@vex/testkit";
+import { isExpr, type Expr } from "@mark1russell7/vex";
+import { arbExpr } from "@mark1russell7/vex-testkit";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

@@ -60,7 +60,7 @@ An expression is plain JSON data. It has one of these kinds.
 - **[EVAL.ORIGIN]** An origin that is not a key of the space gives `#REF!`.
 - **[EVAL.LOCATION]** An error value has the path of the node that made it, and the origin and the focus of the evaluation at that node. An extension handler can give an error without an origin. Then the interpreter adds the path, the origin and the focus of the extension node.
 - **[EVAL.COMPILE]** `compile(e, options)` gives a program. Its `run` and `explain` give the same results and the same traces as `evaluate` and `explain`. One program evaluates at each origin of each space, and one evaluation does not change a later evaluation.
-- **[EVAL.REFERENCE]** The interpreter of `@vex/core` and the reference interpreter of `@vex/testkit` give the same value or the same error code.
+- **[EVAL.REFERENCE]** The interpreter of `@mark1russell7/vex` and the reference interpreter of `@mark1russell7/vex-testkit` give the same value or the same error code.
 
 ### 5.1 References
 
@@ -126,7 +126,7 @@ An expression is plain JSON data. It has one of these kinds.
 ## 7. Domains
 
 - **[DOMAIN.OWNED]** A domain owns its op table. `defineDomain` does not change a class or a prototype, and an import has no side effects.
-- **[DOMAIN.LAWS]** Each law that a domain declares holds for the values of the domain. `@vex/testkit` checks each law with property tests.
+- **[DOMAIN.LAWS]** Each law that a domain declares holds for the values of the domain. `@mark1russell7/vex-testkit` checks each law with property tests.
 
 ## 8. The builder
 

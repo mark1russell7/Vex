@@ -1,7 +1,7 @@
 /**
  * Formatting helpers: short texts for values and errors, and the links to the error pages.
  */
-import { domainOf, formatError, isVexList, previewValue, type Result, type VexError } from "@vex/core";
+import { domainOf, formatError, isVexList, previewValue, type Result, type VexError } from "@mark1russell7/vex";
 import { DOMAINS } from "./specimen.ts";
 
 const round = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, "").replace(/\.$/, ""));

@@ -6,15 +6,15 @@ description: Eight short lessons. Each lesson adds one call to a chain, and each
 import { Aside } from "@astrojs/starlight/components";
 import Stepper from "../../../components/Stepper.tsx";
 
-Each lesson adds one call to the chain of the lesson before it. Each example runs the real `@vex/core` in your browser.
+Each lesson adds one call to the chain of the lesson before it. Each example runs the real `@mark1russell7/vex` in your browser.
 
 The examples read four boxes: A, B, C and D. Each box has a `position`, a `size`, a `weight`, a `color` and a `name`. Drag a box in any example: each example on the page evaluates again with the new position.
 
 The root of each chain comes from these lines:
 
 ```ts doctest
-import { space, vex } from "@vex/core";
-import { BoolDomain, ColorDomain, NumDomain, Vec2Domain } from "@vex/domains";
+import { space, vex } from "@mark1russell7/vex";
+import { BoolDomain, ColorDomain, NumDomain, Vec2Domain } from "@mark1russell7/vex-domains";
 
 const root = vex(Vec2Domain, NumDomain, BoolDomain, ColorDomain).over(space.record(boxes));
 ```

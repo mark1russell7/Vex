@@ -37,7 +37,7 @@ jobs:
       # Oxlint with type-aware rules
       - run: pnpm lint
       - run: pnpm test
-      # The coverage of @vex/core from the tests of each package, with the thresholds of vitest.config.ts
+      # The coverage of @mark1russell7/vex from the tests of each package, with the thresholds of vitest.config.ts
       - run: pnpm test:coverage
       # The code blocks of the docs with the meta word "doctest": types, values and type errors
       - run: pnpm test:docs

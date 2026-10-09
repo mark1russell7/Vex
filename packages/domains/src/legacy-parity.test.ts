@@ -2,7 +2,7 @@
  * Each scenario of the 20 tests of `@vex/legacy`, written with the new API. When these pass, the new core
  * covers what the old code did, and the plan can delete `@vex/legacy`.
  */
-import { space, vex, type Result } from "@vex/core";
+import { space, vex, type Result } from "@mark1russell7/vex";
 import { describe, expect, it } from "vitest";
 import { Angle, AngleDomain } from "./angle.ts";
 import { Color, ColorDomain } from "./color.ts";

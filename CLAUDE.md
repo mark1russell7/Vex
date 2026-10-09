@@ -19,7 +19,9 @@ Write all prose of this repository in the style of ASD-STE100 Simplified Technic
 
 - Make a new package with `pnpm package add <name> --preset=ts`. Do not write `package.json` or `tsconfig.json` by hand.
 - Each package has a `tsconfig.test.json`. `pnpm typecheck` checks the source and the tests.
-- `@vex/core` has no runtime dependencies. Other packages depend on it, and it depends on none of them.
+- `@mark1russell7/vex` has no runtime dependencies. Other packages depend on it, and it depends on none of them.
+- The type `Optional` comes from `@mark1russell7/optional`, the Optional of the family. It is a dev dependency, and the build copies the type into the declarations.
+- The published packages are `@mark1russell7/vex`, `@mark1russell7/vex-domains` and `@mark1russell7/vex-testkit`. The other packages are private.
 
 ## Tests
 

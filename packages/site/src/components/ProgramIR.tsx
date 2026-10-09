@@ -2,7 +2,7 @@
  * A program and its expression: the code that the reader writes, next to the JSON data that the builder makes.
  * The build renders it from the real builder.
  */
-import { serialize } from "@vex/core";
+import { serialize } from "@mark1russell7/vex";
 import type { ReactElement } from "react";
 import { programById } from "../lib/programs.ts";
 import { DOMAINS, INITIAL_BOXES, rootOf } from "../lib/specimen.ts";

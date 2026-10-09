@@ -3,7 +3,7 @@
  * Vex does not write to the prototypes of domain classes, and an import has no side effects.
  */
 
-/** An algebraic law that an op claims. `@vex/testkit` checks each claim with property tests. */
+/** An algebraic law that an op claims. `@mark1russell7/vex-testkit` checks each claim with property tests. */
 export type Law = "commutative" | "associative" | "idempotent";
 
 /** The kind of a parameter. The interpreter checks the arguments of an op that declares its parameters. */

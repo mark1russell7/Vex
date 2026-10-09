@@ -3,7 +3,7 @@
  * time. For each node, it shows the focus, the fields that the node reads, and the value or the error. A table
  * shows the result of the program at each origin (the start axis).
  */
-import { evaluate, explain, type Expr, type TraceEvent } from "@vex/core";
+import { evaluate, explain, type Expr, type TraceEvent } from "@mark1russell7/vex";
 import { useMemo, useState, type ReactElement } from "react";
 import { errorHref, show, showResult } from "../lib/format.ts";
 import { programById, type SiteProgram } from "../lib/programs.ts";

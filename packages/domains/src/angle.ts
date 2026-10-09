@@ -1,4 +1,4 @@
-import { defineDomain, type Domain, type OpTable } from "@vex/core";
+import { defineDomain, type Domain, type OpTable } from "@mark1russell7/vex";
 import { Vec2 } from "./vec2.ts";
 
 /** An immutable angle in radians. */

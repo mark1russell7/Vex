@@ -3,7 +3,7 @@
  * an axis and a reduction. The Lab shows the code, the result at each origin, the trace and the expression as
  * JSON. The reader can also change the JSON and evaluate it: a program is data.
  */
-import { app, domainOf, each, evaluate, explain, isVexList, key as keyMove, let_, lit, other as otherMove, origin as originMove, parse, ref, serialize, v, type Expr, type Move, type ParamKind } from "@vex/core";
+import { app, domainOf, each, evaluate, explain, isVexList, key as keyMove, let_, lit, other as otherMove, origin as originMove, parse, ref, serialize, v, type Expr, type Move, type ParamKind } from "@mark1russell7/vex";
 import { useMemo, useState, type ReactElement } from "react";
 import { errorHref, show, showResult } from "../lib/format.ts";
 import { DOMAINS, spaceOf, useBoxes, type BoxKey } from "../lib/specimen.ts";

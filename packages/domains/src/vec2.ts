@@ -1,4 +1,4 @@
-import { defineDomain, type Domain, type OpTable } from "@vex/core";
+import { defineDomain, type Domain, type OpTable } from "@mark1russell7/vex";
 
 /**
  * An immutable 2D vector. The methods live on the prototype, so a vector costs two numbers. Division is real

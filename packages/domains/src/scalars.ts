@@ -1,4 +1,4 @@
-import { defineDomain, type Domain, type FnOp } from "@vex/core";
+import { defineDomain, type Domain, type FnOp } from "@mark1russell7/vex";
 
 type NumFn1 = (a: number) => number;
 type NumFn2 = (a: number, b: number) => number;

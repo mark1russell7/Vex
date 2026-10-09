@@ -1,4 +1,4 @@
-import { defineDomain, type Domain, type OpTable } from "@vex/core";
+import { defineDomain, type Domain, type OpTable } from "@mark1russell7/vex";
 
 /**
  * An immutable RGBA color. The channels have no fixed range: use `clamp` to limit them. `add` adds the color

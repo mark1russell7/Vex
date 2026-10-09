@@ -23,7 +23,7 @@ A Store is a pair: a function from positions to values, and one position. In Vex
 
 ## The laws
 
-A comonad obeys laws. Vex tests them with random spaces and random programs, through the property tests of `@vex/testkit`:
+A comonad obeys laws. Vex tests them with random spaces and random programs, through the property tests of `@mark1russell7/vex-testkit`:
 
 - **AXIS.EXTEND**: the item at key `k` of `each(all, e)` equals `e` at origin `k`. This is the law "extract after extend gives the program".
 - **AXIS.OTHER-TWICE**: in a pair, `other` twice reads at the focus.

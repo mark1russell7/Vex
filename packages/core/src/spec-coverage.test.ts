@@ -64,7 +64,7 @@ describe("the specification is executable", () => {
     expect(missing).toEqual([]);
   });
 
-  it("V-021: @vex/core imports no domain package and no legacy code", () => {
+  it("V-021: @mark1russell7/vex imports no domain package and no legacy code", () => {
     const sources = files(join(repo, "packages", "core", "src"), (f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
     const bad = sources.filter((f) => /from\s+["']@vex\/(domains|legacy|testkit)["']/.test(readFileSync(f, "utf8"))).map((f) => relative(repo, f));
     expect(bad).toEqual([]);

@@ -3,7 +3,7 @@
  * purpose: they make prototype names, missing fields, non-finite numbers, records that throw, and ops that do
  * not exist.
  */
-import { space, type Axis, type Expr, type Move, type Space } from "@vex/core";
+import { space, type Axis, type Expr, type Move, type Space } from "@mark1russell7/vex";
 import * as fc from "fast-check";
 
 /** The options of the arbitraries. */

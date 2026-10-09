@@ -3,8 +3,8 @@
  * reads. The reader selects the reads in a grid, and can put `ifError(0)` around the reads of a column. Each cell
  * on a cycle gives `#CYCLE!`, also behind `ifError`. A cell that only reads a cycle can catch the error.
  */
-import { app, cell, lit, space, SheetRun, type Expr } from "@vex/core";
-import { NumDomain } from "@vex/domains";
+import { app, cell, lit, space, SheetRun, type Expr } from "@mark1russell7/vex";
+import { NumDomain } from "@mark1russell7/vex-domains";
 import { useMemo, useState, type ReactElement } from "react";
 
 const COLUMNS = ["a", "b", "c", "d"] as const;

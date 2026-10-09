@@ -1,4 +1,4 @@
-// This script copies the sources and the tests of @vex/core, @vex/domains and @vex/testkit to work/. Stryker reads only the
+// This script copies the sources and the tests of @mark1russell7/vex, @mark1russell7/vex-domains and @mark1russell7/vex-testkit to work/. Stryker reads only the
 // files under its working folder, and its Vitest runner loads the Vitest of that folder (4.1, not 5).
 import { cpSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";

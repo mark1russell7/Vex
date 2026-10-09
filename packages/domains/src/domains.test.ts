@@ -1,4 +1,4 @@
-import { app, evaluate, lit, ref, space, vex, type Result } from "@vex/core";
+import { app, evaluate, lit, ref, space, vex, type Result } from "@mark1russell7/vex";
 import { describe, expect, it } from "vitest";
 import { Angle, AngleDomain } from "./angle.ts";
 import { Color } from "./color.ts";

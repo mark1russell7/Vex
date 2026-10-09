@@ -1,5 +1,5 @@
-import { app, cell, compile, each, evaluate, explain, lit, parse, ref, serialize, SheetRun, space, vex, type Expr, type Space } from "@vex/core";
-import { BoolDomain, NumDomain, Vec2, Vec2Domain } from "@vex/domains";
+import { app, cell, compile, each, evaluate, explain, lit, parse, ref, serialize, SheetRun, space, vex, type Expr, type Space } from "@mark1russell7/vex";
+import { BoolDomain, NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { arbExpr, arbOrigin, arbSpace, PATHS } from "./arbitraries.ts";

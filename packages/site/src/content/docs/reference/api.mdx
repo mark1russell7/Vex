@@ -1,17 +1,17 @@
 ---
 title: The API
-description: The functions and types of @vex/core, @vex/domains and @vex/testkit.
+description: The functions and types of @mark1russell7/vex, @mark1russell7/vex-domains and @mark1russell7/vex-testkit.
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-Vex has three packages. `@vex/core` has the kernel and the builder, and it has no runtime dependencies. `@vex/domains` has the domains of the site. `@vex/testkit` has the property-test tools.
+Vex has three packages. `@mark1russell7/vex` has the kernel and the builder, and it has no runtime dependencies. `@mark1russell7/vex-domains` has the domains of the site. `@mark1russell7/vex-testkit` has the property-test tools.
 
 ## The builder
 
 ```ts doctest
-import { space, vex } from "@vex/core";
-import { NumDomain, Vec2Domain } from "@vex/domains";
+import { space, vex } from "@mark1russell7/vex";
+import { NumDomain, Vec2Domain } from "@mark1russell7/vex-domains";
 
 const root = vex(Vec2Domain, NumDomain).over(space.record({ A, B, C }));
 const nearest = root.from("position").others((e) => e._.subtract("position")._.length()).min();
@@ -104,7 +104,7 @@ A space copies its input. Nothing changes a space after it is made.
 ## Domains
 
 ```ts
-import { defineDomain, type Domain, type OpTable } from "@vex/core";
+import { defineDomain, type Domain, type OpTable } from "@mark1russell7/vex";
 
 export const MoneyDomain: Domain<"Money", Money, OpTable<Money, "add" | "times", "add">> = defineDomain({
   name: "Money",
@@ -151,7 +151,7 @@ Under `isolatedDeclarations`, give a domain an explicit type. `OpTable<D, Names,
 
 ## Results
 
-`Result<T>` is `{ ok: true, value }` or `{ ok: false, error }`. `Optional<T>` is `{ tag: "some", value }` or `{ tag: "none" }`. The helpers are `ok`, `fail`, `some`, `none`, `isSome`, `isNone`, `toOptional`, `getOr`, `mapResult` and `chainResult`. An error has a `code`, a `kind`, a `message` and the `path` of its node. Refer to [the error codes](../../learn/errors/).
+`Result<T>` is `{ ok: true, value }` or `{ ok: false, error }`. `Optional<T>` is `{ tag: "some", value }` or `{ tag: "none" }`. It is the Optional of the family, from [`@mark1russell7/optional`](https://github.com/mark1russell7/optional), so the values of render and Vex are the same type. The helpers are `ok`, `fail`, `some`, `none`, `isSome`, `isNone`, `toOptional`, `getOr`, `mapResult` and `chainResult`. An error has a `code`, a `kind`, a `message` and the `path` of its node. Refer to [the error codes](../../learn/errors/).
 
 ## The test kit
 

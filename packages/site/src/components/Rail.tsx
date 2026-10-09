@@ -4,7 +4,7 @@
  * a signpost with the error code. An error moves up the tree, so later stations stay on the bottom track until
  * a node catches the error.
  */
-import { explain, type TraceEvent } from "@vex/core";
+import { explain, type TraceEvent } from "@mark1russell7/vex";
 import { useMemo, useState, type ReactElement } from "react";
 import { errorHref, show } from "../lib/format.ts";
 import { ERROR_PROGRAMS, PROGRAMS, programById } from "../lib/programs.ts";

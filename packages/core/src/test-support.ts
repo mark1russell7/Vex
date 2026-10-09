@@ -1,6 +1,6 @@
 /**
- * Test support: a small 2D point domain and helpers. The tests of `@vex/core` use it, so that the core
- * tests do not depend on `@vex/domains`.
+ * Test support: a small 2D point domain and helpers. The tests of `@mark1russell7/vex` use it, so that the core
+ * tests do not depend on `@mark1russell7/vex-domains`.
  */
 import { defineDomain, type Domain, type OpSpec } from "./domain.ts";
 import type { VexError } from "./errors.ts";

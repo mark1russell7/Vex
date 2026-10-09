@@ -1,4 +1,4 @@
-import { defineDomain, type Domain, type OpTable } from "@vex/core";
+import { defineDomain, type Domain, type OpTable } from "@mark1russell7/vex";
 
 /** A wrapper around a function. Its op `invoke` calls the function. It shows how a domain can hold behavior. */
 export class Fn {

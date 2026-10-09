@@ -29,7 +29,7 @@ The program reads `position` and `size` at the focus, and adds them. The result 
 A space holds the records. It copies its input, and nothing changes it after that. Vex has three kinds of space:
 
 ```ts
-import { space } from "@vex/core";
+import { space } from "@mark1russell7/vex";
 
 space.record({ A: boxA, B: boxB }); // keys "A" and "B"
 space.array([cell0, cell1, cell2]); // keys "0", "1" and "2"
@@ -79,8 +79,8 @@ At the origin A, the axis `others` has B, C and D as its targets. The body start
 A domain tells Vex which values belong to it and which ops they have. A chain finds the domain of its current value, and `._` lists the ops of that domain. After `length()`, the value is a number, so `._` lists the ops of `NumDomain`.
 
 ```ts doctest
-import { space, vex } from "@vex/core";
-import { BoolDomain, NumDomain, Vec2Domain } from "@vex/domains";
+import { space, vex } from "@mark1russell7/vex";
+import { BoolDomain, NumDomain, Vec2Domain } from "@mark1russell7/vex-domains";
 
 const root = vex(Vec2Domain, NumDomain, BoolDomain).over(space.record(boxes));
 
@@ -88,7 +88,7 @@ root.from("position")._.add("size");      // a Vec2 op
 root.from("position")._.length()._.gt(3); // a Num op after length()
 ```
 
-An op can declare laws, for example `commutative`. `@vex/testkit` checks each law with property tests. Refer to [the domains](../../reference/domains/) for the ops of each domain.
+An op can declare laws, for example `commutative`. `@mark1russell7/vex-testkit` checks each law with property tests. Refer to [the domains](../../reference/domains/) for the ops of each domain.
 
 ## Result
 

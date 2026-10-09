@@ -3,7 +3,7 @@
  * `identity`). The law checker turns each claim into a fast-check property. A false claim gives a
  * counterexample.
  */
-import { resolveOp, type AnyDomain, type Law } from "@vex/core";
+import { resolveOp, type AnyDomain, type Law } from "@mark1russell7/vex";
 import * as fc from "fast-check";
 
 /** The options of the law checker. */

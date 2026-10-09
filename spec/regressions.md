@@ -4,9 +4,9 @@ Each defect of the audits ([`docs/archive/2026-07/BUGS.md`](../docs/archive/2026
 
 | ID | Status | Evidence |
 |---|---|---|
-| V-001 | test | The others axis exists (`@vex/core` builder tests) |
-| V-002 | test | The plain and lifted NDVector domains are independent (`@vex/domains`) |
-| V-003 | test | A domain does not change its class (`@vex/core` domain tests) |
+| V-001 | test | The others axis exists (`@mark1russell7/vex` builder tests) |
+| V-002 | test | The plain and lifted NDVector domains are independent (`@mark1russell7/vex-domains`) |
+| V-003 | test | A domain does not change its class (`@mark1russell7/vex` domain tests) |
 | V-004 | test | An unknown key gives `#REF!` |
 | V-005 | test | `other` outside a pair gives `#REF!` |
 | V-006 | test | Bindings exist only in the expression, through `let` and `with()` |
@@ -24,7 +24,7 @@ Each defect of the audits ([`docs/archive/2026-07/BUGS.md`](../docs/archive/2026
 | V-018 | test | Division by zero gives `#NUM!` |
 | V-019 | test | A position outside a grid gives `#REF!` |
 | V-020 | resolved | The `Expr` type lists each kind, and the interpreter switch is exhaustive (Oxlint `switch-exhaustiveness-check`). |
-| V-021 | test | `@vex/core` imports no domain package |
+| V-021 | test | `@mark1russell7/vex` imports no domain package |
 | V-022 | test | A value is not `undefined` |
 | V-023 | resolved | `applyUsing` is gone. Arguments are expressions. |
 | V-024 | resolved | `methodReturns` is gone. The builder reads return types from the method signatures. |

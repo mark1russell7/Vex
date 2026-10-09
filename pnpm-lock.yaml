@@ -177,7 +177,7 @@ importers:
         version: 3.0.3
       '@mark1russell7/cue':
         specifier: github:mark1russell7/cue
-        version: https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7
       '@mark1russell7/ste-lint':
         specifier: github:mark1russell7/ste-lint
         version: https://codeload.github.com/mark1russell7/ste-lint/tar.gz/f597d6c1e09bcfcb487bb575825d6d5f29e9e0c7
@@ -214,7 +214,7 @@ importers:
     devDependencies:
       '@mark1russell7/cue':
         specifier: github:mark1russell7/cue
-        version: https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -229,7 +229,10 @@ importers:
     devDependencies:
       '@mark1russell7/cue':
         specifier: github:mark1russell7/cue
-        version: https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7
+      '@mark1russell7/optional':
+        specifier: github:mark1russell7/optional
+        version: https://codeload.github.com/mark1russell7/optional/tar.gz/1c649e1ea49991d1574a74f0c402220502e219a7
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -242,13 +245,13 @@ importers:
 
   packages/domains:
     dependencies:
-      '@vex/core':
+      '@mark1russell7/vex':
         specifier: workspace:*
         version: link:../core
     devDependencies:
       '@mark1russell7/cue':
         specifier: github:mark1russell7/cue
-        version: https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -261,22 +264,22 @@ importers:
 
   packages/pilots:
     dependencies:
-      '@vex/core':
+      '@mark1russell7/vex':
         specifier: workspace:*
         version: link:../core
-      '@vex/domains':
+      '@mark1russell7/vex-domains':
         specifier: workspace:*
         version: link:../domains
     devDependencies:
       '@mark1russell7/cue':
         specifier: github:mark1russell7/cue
-        version: https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7
+      '@mark1russell7/vex-testkit':
+        specifier: workspace:*
+        version: link:../testkit
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
-      '@vex/testkit':
-        specifier: workspace:*
-        version: link:../testkit
       fast-check:
         specifier: ^4.10.2
         version: 4.10.2
@@ -301,18 +304,18 @@ importers:
       '@fontsource-variable/atkinson-hyperlegible-next':
         specifier: ^5.3.0
         version: 5.3.0
-      '@vex/core':
+      '@mark1russell7/vex':
         specifier: workspace:*
         version: link:../core
-      '@vex/domains':
+      '@mark1russell7/vex-domains':
         specifier: workspace:*
         version: link:../domains
+      '@mark1russell7/vex-testkit':
+        specifier: workspace:*
+        version: link:../testkit
       '@vex/pilots':
         specifier: workspace:*
         version: link:../pilots
-      '@vex/testkit':
-        specifier: workspace:*
-        version: link:../testkit
       astro:
         specifier: ^7.3.8
         version: 7.3.8(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)
@@ -331,7 +334,7 @@ importers:
     devDependencies:
       '@mark1russell7/cue':
         specifier: github:mark1russell7/cue
-        version: https://codeload.github.com/mark1russell7/cue/tar.gz/3a965d5d7ae6ace662475b52b0c6a32122d5ca34
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7
       '@playwright/test':
         specifier: ^1.64.0
         version: 1.64.0
@@ -365,7 +368,7 @@ importers:
 
   packages/testkit:
     dependencies:
-      '@vex/core':
+      '@mark1russell7/vex':
         specifier: workspace:*
         version: link:../core
       fast-check:
@@ -374,13 +377,13 @@ importers:
     devDependencies:
       '@mark1russell7/cue':
         specifier: github:mark1russell7/cue
-        version: https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab
+        version: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7
+      '@mark1russell7/vex-domains':
+        specifier: workspace:*
+        version: link:../domains
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
-      '@vex/domains':
-        specifier: workspace:*
-        version: link:../domains
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -390,10 +393,10 @@ importers:
 
   tools/mutation:
     dependencies:
-      '@vex/domains':
+      '@mark1russell7/vex-domains':
         specifier: workspace:*
         version: link:../../packages/domains
-      '@vex/testkit':
+      '@mark1russell7/vex-testkit':
         specifier: workspace:*
         version: link:../../packages/testkit
       fast-check:
@@ -1400,23 +1403,16 @@ packages:
     resolution: {integrity: sha512-6QEf6yqFbETdwGITKq57aYoPfX/3K8XFNwsAlx0C1M7o8cb79sv1M3w+tWuWvIcSbNqrLF7OD7YpZMVVz335hQ==}
     engines: {node: '>=20.0.0'}
 
-  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/3a965d5d7ae6ace662475b52b0c6a32122d5ca34':
-    resolution: {gitHosted: true, integrity: sha512-2+NCa3Mm19S5w/xptZLzJw0XJHM4AzBP/Ay7XwOp7zXOANehq6uJhTrhbfA/pInV7zuiqc2BQcCnuZPGBVWI3Q==, tarball: https://codeload.github.com/mark1russell7/cue/tar.gz/3a965d5d7ae6ace662475b52b0c6a32122d5ca34}
+  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7':
+    resolution: {gitHosted: true, integrity: sha512-hEpr79iwUOLCP6Pn6m8KHq200u4c2jM1npz+SIJQGrrT1fdUUAwgKCZgwOPiyiH5SA4QPXID7f1wCDz7T9HP7A==, tarball: https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7}
     version: 1.0.0
     engines: {node: '>=25.0.0', npm: '>=11.0.0'}
     hasBin: true
 
-  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10':
-    resolution: {gitHosted: true, integrity: sha512-12RMJboloQodhzTscWR5DkQ7V7OiY7we2Io6Qq/Cwl1WkXVAB4wbGwnqlOAhriDDyCRq+kaDdk4DyF87iMH/+A==, tarball: https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10}
+  '@mark1russell7/optional@https://codeload.github.com/mark1russell7/optional/tar.gz/1c649e1ea49991d1574a74f0c402220502e219a7':
+    resolution: {gitHosted: true, integrity: sha512-pcD7KxpWgI9eNlFe9DqCfsQD1PPI/TTT9fQfZ4EVTFK62LaXpJVSKlFm6QNaHHzsNw1k8zJDJr+lNibh0+6JJQ==, tarball: https://codeload.github.com/mark1russell7/optional/tar.gz/1c649e1ea49991d1574a74f0c402220502e219a7}
     version: 1.0.0
-    engines: {node: '>=25.0.0', npm: '>=11.0.0'}
-    hasBin: true
-
-  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab':
-    resolution: {gitHosted: true, integrity: sha512-tkdjFP+N1C5rRt/eq4hHnb3iTHeD6ZvzpfvNjsJvfdHoNXelrP0TTINIWA00MJrId+6m4GQe9CETLUwgLMN9Tg==, tarball: https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab}
-    version: 1.0.0
-    engines: {node: '>=25.0.0', npm: '>=11.0.0'}
-    hasBin: true
+    engines: {node: '>=22.12'}
 
   '@mark1russell7/ste-lint@https://codeload.github.com/mark1russell7/ste-lint/tar.gz/f597d6c1e09bcfcb487bb575825d6d5f29e9e0c7':
     resolution: {gitHosted: true, integrity: sha512-HDxumpWNUeciZKaXbAGFPyoOTrt0trj7L3/koNvWnTN/vEuF0gYzqVJdsgfTQ9bE/DhSxfNMRxtrh4KYnbbimA==, tarball: https://codeload.github.com/mark1russell7/ste-lint/tar.gz/f597d6c1e09bcfcb487bb575825d6d5f29e9e0c7}
@@ -5017,11 +5013,9 @@ snapshots:
       tinyglobby: 0.2.17
       yaml: 2.9.1
 
-  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/3a965d5d7ae6ace662475b52b0c6a32122d5ca34': {}
+  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/9c99ad65d51cefcba5a8b6dc89358d7a94758ca7': {}
 
-  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/e737619231ee976251a0a2d5ff61aec113d22a10': {}
-
-  '@mark1russell7/cue@https://codeload.github.com/mark1russell7/cue/tar.gz/fb96d136d5c451b7ee4f16e50b756b855e7320ab': {}
+  '@mark1russell7/optional@https://codeload.github.com/mark1russell7/optional/tar.gz/1c649e1ea49991d1574a74f0c402220502e219a7': {}
 
   '@mark1russell7/ste-lint@https://codeload.github.com/mark1russell7/ste-lint/tar.gz/f597d6c1e09bcfcb487bb575825d6d5f29e9e0c7':
     dependencies:

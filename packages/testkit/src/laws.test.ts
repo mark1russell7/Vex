@@ -1,5 +1,5 @@
-import { defineDomain, type OpTable } from "@vex/core";
-import { Angle, AngleDomain, BoolDomain, Color, ColorDomain, NDVector, NDVectorDomain, NumDomain, Vec2, Vec2Domain } from "@vex/domains";
+import { defineDomain, type OpTable } from "@mark1russell7/vex";
+import { Angle, AngleDomain, BoolDomain, Color, ColorDomain, NDVector, NDVectorDomain, NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { checkLaws } from "./laws.ts";

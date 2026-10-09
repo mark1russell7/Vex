@@ -3,8 +3,8 @@
  * reader drags in one widget moves in all of them. The state lives in this module: each island of the page
  * imports the same module instance.
  */
-import { space, vex, type Space } from "@vex/core";
-import { BoolDomain, Color, ColorDomain, NumDomain, Vec2, Vec2Domain } from "@vex/domains";
+import { space, vex, type Space } from "@mark1russell7/vex";
+import { BoolDomain, Color, ColorDomain, NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
 import { useSyncExternalStore } from "react";
 
 /** One box of the specimen. */

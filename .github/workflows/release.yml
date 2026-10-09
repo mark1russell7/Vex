@@ -4,7 +4,7 @@ name: Release
 # pull request, the next start publishes the packages to npm with provenance.
 #
 # The owner starts it by hand. Before the first release, the owner does these steps (docs/REVIEW.md §9.1, D8):
-# 1. Set the package names and remove "private": true from @vex/core, @vex/domains and @vex/testkit.
+# 1. Set the package names and remove "private": true from @mark1russell7/vex, @mark1russell7/vex-domains and @mark1russell7/vex-testkit.
 # 2. On npmjs.com, add this repository and this workflow as the trusted publisher of each package, with direct
 #    publishing (Changesets cannot stage a release at this time).
 on:

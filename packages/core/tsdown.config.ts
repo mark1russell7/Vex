@@ -6,7 +6,8 @@ export default defineConfig({
   outDir: "build",
   format: "esm",
   platform: "neutral",
-  dts: true,
+  // The type Optional comes from @mark1russell7/optional, a dev dependency: the declarations get a copy of it.
+  dts: { resolve: ["@mark1russell7/optional"] },
   sourcemap: true,
   publint: true,
   attw: { profile: "esm-only" },

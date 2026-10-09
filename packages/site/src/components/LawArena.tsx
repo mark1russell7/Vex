@@ -1,11 +1,11 @@
 /**
- * The law arena. The law checker of `@vex/testkit` runs in the browser: it tests each law that each domain
+ * The law arena. The law checker of `@mark1russell7/vex-testkit` runs in the browser: it tests each law that each domain
  * declares. The second part is a hunt. The old `Color.add` claimed commutativity. But it kept the alpha of the
  * receiver. fast-check finds a counterexample, and the widget shows each step of the shrinking.
  */
-import { defineDomain, resolveOp, type OpTable } from "@vex/core";
-import { Angle, AngleDomain, BoolDomain, Color, ColorDomain, NDVector, NDVectorDomain, NumDomain, Vec2, Vec2Domain } from "@vex/domains";
-import { checkLaws, structuralEqual, type LawResult } from "@vex/testkit";
+import { defineDomain, resolveOp, type OpTable } from "@mark1russell7/vex";
+import { Angle, AngleDomain, BoolDomain, Color, ColorDomain, NDVector, NDVectorDomain, NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
+import { checkLaws, structuralEqual, type LawResult } from "@mark1russell7/vex-testkit";
 import * as fc from "fast-check";
 import { useState, type ReactElement } from "react";
 

@@ -3,7 +3,7 @@
  * it overlaps. The push is the sum of the directions from their centres to its centre. Drag the boxes to see the
  * pushes change. "Relax" moves each box one step along its push, and repeats until no box overlaps.
  */
-import { Vec2 } from "@vex/domains";
+import { Vec2 } from "@mark1russell7/vex-domains";
 import { useMemo, type ReactElement } from "react";
 import { show } from "../lib/format.ts";
 import { getBoxes, resetBoxes, rootOf, setBoxes, useBoxes, type BoxKey, type Boxes, type SpecimenRoot } from "../lib/specimen.ts";

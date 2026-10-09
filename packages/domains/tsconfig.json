@@ -6,7 +6,6 @@
     "emitDeclarationOnly": true,
     "allowImportingTsExtensions": true,
     "composite": false,
-    "incremental": false,
-    "diagnostics": false
+    "incremental": false
   }
 }

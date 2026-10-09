@@ -1,13 +1,13 @@
 ---
 title: The law arena
-description: The law checker of @vex/testkit runs in the browser, and it catches a false claim of the old Color.add.
+description: The law checker of @mark1russell7/vex-testkit runs in the browser, and it catches a false claim of the old Color.add.
 ---
 
 import LawArena from "../../../components/LawArena.tsx";
 
 A domain declares laws for its ops: `commutative`, `associative`, `idempotent` and an `identity`. An evaluator can use a law, for example to reduce a list in any order. Thus a false claim gives wrong results.
 
-The law checker of `@vex/testkit` turns each claim into a property test with fast-check. It runs here in your browser, with the same code as CI.
+The law checker of `@mark1russell7/vex-testkit` turns each claim into a property test with fast-check. It runs here in your browser, with the same code as CI.
 
 <LawArena client:visible />
 

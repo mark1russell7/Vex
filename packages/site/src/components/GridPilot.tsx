@@ -5,7 +5,7 @@
  * implementation.
  */
 import { gridProgram, gridReference, gridRoot, gridVex, type GridItem } from "@vex/pilots";
-import { sizeOf } from "@vex/core";
+import { sizeOf } from "@mark1russell7/vex";
 import { useMemo, useState, type ReactElement } from "react";
 
 /** This function gives the sizes of the items, from a seed. Some items have no size. */

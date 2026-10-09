@@ -7,8 +7,8 @@
  * Graph is a private repository, so this module does not copy its code. `gridReference` follows the behavior
  * of the Graph strategy, step by step.
  */
-import { fail, ok, space, vex, vexError, type ArrayKey, type ChainOf, type ExtHandler, type Merge, type Root } from "@vex/core";
-import { NumDomain } from "@vex/domains";
+import { fail, ok, space, vex, vexError, type ArrayKey, type ChainOf, type ExtHandler, type Merge, type Root } from "@mark1russell7/vex";
+import { NumDomain } from "@mark1russell7/vex-domains";
 
 /** An item of the layout: its intended size. A missing size counts as 0 for the cell size. */
 export interface GridItem {

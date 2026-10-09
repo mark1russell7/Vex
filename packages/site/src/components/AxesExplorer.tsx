@@ -3,8 +3,8 @@
  * each origin. The boxes show the arrows from the origin to its targets, with the value of the body at each
  * target: the distance to the origin. A reduction turns the list into one value.
  */
-import { app, axisTargets, each, evaluate, isVexList, let_, lit, ref, v, type Axis, type Expr } from "@vex/core";
-import { Vec2 } from "@vex/domains";
+import { app, axisTargets, each, evaluate, isVexList, let_, lit, ref, v, type Axis, type Expr } from "@mark1russell7/vex";
+import { Vec2 } from "@mark1russell7/vex-domains";
 import { useMemo, useState, type ReactElement } from "react";
 import { show, showResult } from "../lib/format.ts";
 import { DOMAINS, spaceOf, useBoxes, type BoxKey } from "../lib/specimen.ts";

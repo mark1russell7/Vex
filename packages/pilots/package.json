@@ -16,11 +16,11 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.3",
     "fast-check": "^4.10.2",
-    "@vex/testkit": "workspace:*"
+    "@mark1russell7/vex-testkit": "workspace:*"
   },
   "description": "Pilots: programs of other projects, written again in Vex and compared with the original code.",
   "dependencies": {
-    "@vex/core": "workspace:*",
-    "@vex/domains": "workspace:*"
+    "@mark1russell7/vex": "workspace:*",
+    "@mark1russell7/vex-domains": "workspace:*"
   }
 }

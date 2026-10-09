@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 
-// The coverage run of the workspace: the tests of each package count toward the coverage of @vex/core.
+// The coverage run of the workspace: the tests of each package count toward the coverage of @mark1russell7/vex.
 export default defineConfig({
   test: {
     projects: ["packages/core", "packages/domains", "packages/testkit", "packages/pilots"],

@@ -4,13 +4,13 @@ import { defineConfig } from "vitest/config";
 const work = (p: string): string => fileURLToPath(new URL(`./work/${p}`, import.meta.url));
 
 // The tests of the three packages in work/, run by Vitest 4.1. The aliases make "vitest" the Vitest of this
-// lane, and "@vex/core" the copy that Stryker mutates.
+// lane, and "@mark1russell7/vex" the copy that Stryker mutates.
 export default defineConfig({
   resolve: {
     alias: {
       vitest: fileURLToPath(import.meta.resolve("vitest")),
-      "@vex/core": work("core/index.ts"),
-      "@vex/domains": work("domains/index.ts"),
+      "@mark1russell7/vex": work("core/index.ts"),
+      "@mark1russell7/vex-domains": work("domains/index.ts"),
     },
   },
   test: {

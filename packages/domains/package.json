@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package",
-  "name": "@vex/domains",
+  "name": "@mark1russell7/vex-domains",
   "version": "0.1.0",
   "description": "Vex domains: 2D vectors, named-component vectors, colors, angles, numbers and booleans.",
   "license": "MIT",
@@ -9,7 +9,6 @@
     "url": "git+https://github.com/mark1russell7/Vex.git",
     "directory": "packages/domains"
   },
-  "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -50,6 +49,6 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "@vex/core": "workspace:*"
+    "@mark1russell7/vex": "workspace:*"
   }
 }

@@ -2,8 +2,8 @@
  * The reference table of the domains. The build makes it from the domain objects, so the table and the code
  * cannot differ.
  */
-import type { AnyDomain, Law, ParamKind } from "@vex/core";
-import { AngleDomain, BoolDomain, ColorDomain, FnDomain, LiftedNDVectorDomain, MaybeDomain, NDVectorDomain, NumDomain, NumRecordDomain, Vec2Domain } from "@vex/domains";
+import type { AnyDomain, Law, ParamKind } from "@mark1russell7/vex";
+import { AngleDomain, BoolDomain, ColorDomain, FnDomain, LiftedNDVectorDomain, MaybeDomain, NDVectorDomain, NumDomain, NumRecordDomain, Vec2Domain } from "@mark1russell7/vex-domains";
 import type { ReactElement } from "react";
 
 const ALL: readonly AnyDomain[] = [Vec2Domain, NDVectorDomain, LiftedNDVectorDomain, NumRecordDomain, ColorDomain, AngleDomain, NumDomain, BoolDomain, FnDomain, MaybeDomain];

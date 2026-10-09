@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package",
-  "name": "@vex/testkit",
+  "name": "@mark1russell7/vex-testkit",
   "version": "0.1.0",
   "description": "Vex test kit: fast-check arbitraries, domain law checks and a reference interpreter.",
   "license": "MIT",
@@ -9,7 +9,6 @@
     "url": "git+https://github.com/mark1russell7/Vex.git",
     "directory": "packages/testkit"
   },
-  "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -46,12 +45,12 @@
   "devDependencies": {
     "@mark1russell7/cue": "github:mark1russell7/cue",
     "@types/node": "^26.6.4",
-    "@vex/domains": "workspace:*",
+    "@mark1russell7/vex-domains": "workspace:*",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "@vex/core": "workspace:*",
+    "@mark1russell7/vex": "workspace:*",
     "fast-check": "^4.10.2"
   }
 }

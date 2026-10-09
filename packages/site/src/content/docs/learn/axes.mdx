@@ -102,12 +102,12 @@ root.from("mass").others((e) => e.from("mass")).max({ strict: true }); // #N/A i
 ```
 
 <Aside type="tip">
-`reduce("add")` folds the list from the left with the op `add` of the domain. For an associative op, any order of reduction gives the same value. The law checker of `@vex/testkit` tests each `associative` claim.
+`reduce("add")` folds the list from the left with the op `add` of the domain. For an associative op, any order of reduction gives the same value. The law checker of `@mark1russell7/vex-testkit` tests each `associative` claim.
 </Aside>
 
 ## The laws of the axes
 
-Three laws of the spec connect the axes. `@vex/testkit` checks each law with random programs and random spaces.
+Three laws of the spec connect the axes. `@mark1russell7/vex-testkit` checks each law with random programs and random spaces.
 
 - **AXIS.OTHERS-UNION**: the targets of `others` and the focus are the targets of `all`.
 - **AXIS.OTHER-TWICE**: in a pair, the address `[other, other]` points to the focus.

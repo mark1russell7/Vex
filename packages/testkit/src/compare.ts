@@ -1,7 +1,7 @@
 /**
  * Comparison of the outcomes of the core interpreter and the reference interpreter.
  */
-import { isVexList, type Result } from "@vex/core";
+import { isVexList, type Result } from "@mark1russell7/vex";
 import type { RefOutcome } from "./reference.ts";
 
 /** A comparable form of an outcome: the error code, or the value with each list in a plain form. */

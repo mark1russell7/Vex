@@ -3,7 +3,7 @@
  * current step (blue arrows, red for a failed read) and the boxes with an error. The reader can drag a box,
  * or select it and move it with the arrow keys.
  */
-import { Vec2 } from "@vex/domains";
+import { Vec2 } from "@mark1russell7/vex-domains";
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactElement, type ReactNode } from "react";
 import { moveBox, type BoxKey, type Boxes } from "../lib/specimen.ts";
 

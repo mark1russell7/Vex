@@ -1,7 +1,12 @@
+import type { Optional as FamilyOptional } from "@mark1russell7/optional";
 import type { VexError } from "./errors.ts";
 
-/** A value that is there, or not there. This is the public result of a Vex program. */
-export type Optional<T> = { readonly tag: "some"; readonly value: T } | { readonly tag: "none" };
+/**
+ * A value that is there, or not there. This is the public result of a Vex program. It is the Optional of the
+ * family (`@mark1russell7/optional`), so render and Vex give and take the same values. The import is a type import
+ * only: the build copies the type into the declarations, so the package has no runtime dependency.
+ */
+export type Optional<T> = FamilyOptional<T>;
 
 /** A value, or the error that tells why there is no value. The interpreter uses this type. */
 export type Result<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: VexError };

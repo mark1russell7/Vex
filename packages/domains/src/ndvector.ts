@@ -1,4 +1,4 @@
-import { defineDomain, type Domain, type FnOp, type OpTable } from "@vex/core";
+import { defineDomain, type Domain, type FnOp, type OpTable } from "@mark1russell7/vex";
 
 /**
  * An immutable vector with named components. The type parameter `K` is the set of component names. Ops that

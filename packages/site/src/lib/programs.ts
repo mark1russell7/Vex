@@ -3,7 +3,7 @@
  * expression over the boxes. The error demos use the IR directly: the typed builder does not let a reader
  * write them.
  */
-import { app, key, lit, ref, type Expr, type FreeFn } from "@vex/core";
+import { app, key, lit, ref, type Expr, type FreeFn } from "@mark1russell7/vex";
 import type { SpecimenRoot } from "./specimen.ts";
 
 /** A program of the site. */

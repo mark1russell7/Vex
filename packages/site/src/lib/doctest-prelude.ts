@@ -5,9 +5,9 @@
  */
 import { INITIAL_BOXES, rootOf } from "./specimen.ts";
 
-export * from "@vex/core";
-export * from "@vex/domains";
-export { checkLaws, assertLaws, referenceEvaluate } from "@vex/testkit";
+export * from "@mark1russell7/vex";
+export * from "@mark1russell7/vex-domains";
+export { checkLaws, assertLaws, referenceEvaluate } from "@mark1russell7/vex-testkit";
 
 export const boxes = INITIAL_BOXES;
 export const { A, B, C, D } = INITIAL_BOXES;

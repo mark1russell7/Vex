@@ -1,7 +1,7 @@
 // The package check (docs/REVIEW.md §8.2, layer L8). This script packs each published package, checks the
 // tarball with publint and attw, installs the tarballs in an empty project, and runs a program against them.
 import { execSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -32,9 +32,9 @@ try {
   run("npm", ["install", "--no-audit", "--no-fund", "--loglevel=error", ...tarballs], app);
   writeFileSync(
     join(app, "smoke.mjs"),
-    `import { space, vex } from "@vex/core";
-import { NumDomain, Vec2, Vec2Domain } from "@vex/domains";
-import { checkLaws } from "@vex/testkit";
+    `import { space, vex } from "@mark1russell7/vex";
+import { NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
+import { checkLaws } from "@mark1russell7/vex-testkit";
 import * as fc from "fast-check";
 
 const box = (x, y) => ({ position: new Vec2(x, y) });
@@ -48,6 +48,9 @@ console.info("package check: the tarballs install, import and run");
 `,
   );
   run("node", ["smoke.mjs"], app);
+  // The type Optional comes from a dev dependency, so the declarations must hold a copy of it, not an import.
+  const dts = readFileSync(join(app, "node_modules/@mark1russell7/vex/build/index.d.ts"), "utf8");
+  if (dts.includes('"@mark1russell7/optional"')) throw new Error("the declarations of @mark1russell7/vex import @mark1russell7/optional");
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

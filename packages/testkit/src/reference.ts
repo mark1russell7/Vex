@@ -1,9 +1,9 @@
 /**
  * A reference interpreter. It is deliberately naive and short, and it follows the semantics table of
- * `docs/REVIEW.md` §6.7 without the code of `@vex/core`. Property tests compare the two interpreters: the
+ * `docs/REVIEW.md` §6.7 without the code of `@mark1russell7/vex`. Property tests compare the two interpreters: the
  * same value, or the same error code.
  */
-import { axisTargets, isVexList, resolveAddr, type AnyDomain, type Axis, type ErrorCode, type Expr, type Space } from "@vex/core";
+import { axisTargets, isVexList, resolveAddr, type AnyDomain, type Axis, type ErrorCode, type Expr, type Space } from "@mark1russell7/vex";
 
 /** The outcome of the reference interpreter: a value, or an error code. */
 export type RefOutcome = { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly code: ErrorCode };

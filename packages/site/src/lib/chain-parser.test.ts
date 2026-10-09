@@ -1,7 +1,7 @@
 import { evaluate, isVexList, space, vex, type Expr } from "@mark1russell7/vex";
 import { NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
 import { describe, expect, it } from "vitest";
-import { ChainError, parseChain, runChain, tokenize } from "./chain-parser.ts";
+import { ChainError, parseChain, programOf, runChain, tokenize } from "./chain-parser.ts";
 
 const boxes = space.record({
   A: { position: new Vec2(0, 0), size: new Vec2(2, 2), weight: 2 },
@@ -18,6 +18,16 @@ const valueAt = (src: string, k: "A" | "B" | "C"): unknown => {
 const fails = (src: string): ChainError => {
   try {
     runChain(parseChain(src), { root });
+  } catch (e) {
+    if (e instanceof ChainError) return e;
+    throw e;
+  }
+  throw new Error(`no error for ${src}`);
+};
+
+const programFails = (src: string): ChainError => {
+  try {
+    programOf(runChain(parseChain(src), { root }), src);
   } catch (e) {
     if (e instanceof ChainError) return e;
     throw e;
@@ -74,6 +84,23 @@ corner._.scale(2)`;
     expect(fails(`root.start(1).at("A")`).message).toMatch(/not a member/);
     expect(() => tokenize("a".repeat(10))).not.toThrow();
     expect(fails("root." + "x".repeat(7000)).message).toMatch(/too long/);
+  });
+});
+
+describe("the program of a chain", () => {
+  it("gives the expression of a chain and of a list chain", () => {
+    const src = `root.from("position").others((e) => e._.distance("position"))`;
+    expect(programOf(runChain(parseChain(src), { root }), src).tag).toBe("let");
+    expect(programOf(runChain(parseChain(`${src}.min()`), { root }), src).tag).toBe("app");
+  });
+
+  it("gives an error for an unfinished chain, an op without a call or a plain value", () => {
+    expect(programFails(`root.from("weight")._`).message).toMatch(/op name is necessary/);
+    expect(programFails(`root.from("weight")._`).span).toEqual({ start: 20, end: 21 });
+    expect(programFails(`root.from("weight")._.add`).message).toMatch(/without a call/);
+    expect(programFails(`root.from`).message).toMatch(/without a call/);
+    expect(programFails(`1`).message).toMatch(/must end with a chain/);
+    expect(programFails(`root.lit`).message).toMatch(/without a call/);
   });
 });
 

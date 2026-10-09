@@ -176,3 +176,46 @@ test("with reduced motion, the hero does not move until the reader selects Play"
   await expect(page.getByRole("figure", { name: "Live: Vex programs evaluate at each box in each frame" }).getByRole("button", { name: "Play" })).toBeVisible();
   await context.close();
 });
+
+test("pointing at a box of the hero shows the list that the program gives at that box", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  await page.goto("./");
+  const hero = page.getByRole("figure", { name: "Live: Vex programs evaluate at each box in each frame" });
+  await hydrated(hero);
+  const svg = hero.locator("svg");
+  const box = await svg.boundingBox();
+  if (box === null) throw new Error("the hero has no picture");
+  // With reduced motion the boxes stay at the start state. Box E is near this point.
+  await page.mouse.move(box.x + box.width * 0.17, box.y + box.height * 0.45);
+  await expect(hero.getByText(/At [A-I], the program gives a list of 8 distances\. The minimum is \d+\.\d\d, to [A-I]\./)).toBeVisible();
+  await page.mouse.move(box.x - 20, box.y - 20);
+  await expect(hero.getByText("Point at a box to see its list.", { exact: false })).toBeVisible();
+  await context.close();
+});
+
+test("the showcase links to each interactive page", async ({ page, request }) => {
+  await page.goto("./");
+  const links = page.locator(".vx-showcase a");
+  await expect(links).toHaveCount(6);
+  for (const href of await links.evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
+    expect((await request.get(href)).status(), href).toBe(200);
+  }
+});
+
+test("the Lab survives an unfinished chain, and marks the position of the error", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("./lab/");
+  await hydrated(page.getByRole("region", { name: "The Lab" }));
+  const code = page.getByLabel("The Vex chain");
+  await code.fill(`root.from("position")._`);
+  await expect(page.getByRole("alert")).toContainText("op name is necessary");
+  await code.fill(`root.frm("size")`);
+  await expect(page.getByRole("alert")).toContainText("line 1, column 6");
+  await expect(page.locator(".vx-lab-shadow .vx-syn-error")).toHaveText("frm");
+  await code.fill(`root.from("position")._.add("size")`);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.locator(".vx-lab-shadow .vx-syn-root")).toHaveText("root");
+  expect(errors).toEqual([]);
+});

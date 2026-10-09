@@ -2,12 +2,15 @@
  * The live hero of the home page. Boxes drift on graph paper. In each frame, two compiled Vex programs evaluate at
  * each box. The first gives the distance to each other box, and an arrow goes to the nearest one. The second gives
  * the number of boxes that the box overlaps, and a box that overlaps another box has a red edge. The counter shows
- * the number of evaluations and their time. With "reduce motion", the boxes do not move until the reader selects
- * "Play".
+ * the number of evaluations and their time.
+ *
+ * When the reader points at a box, the hero shows the list of the first program at that box. Each item of the list is
+ * a dashed line with a distance. With "reduce motion", the boxes do not move until the reader selects "Play".
  */
 import { compile, isVexList, space, vex, type Program, type Space } from "@mark1russell7/vex";
 import { BoolDomain, NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactElement } from "react";
+import { Code } from "./Code.tsx";
 
 const W = 30;
 const H = 18;
@@ -77,8 +80,10 @@ function programs(): { readonly distances: Program; readonly overlaps: Program }
 }
 
 /** The code of the program in the caption. */
-const CODE = `const centre = root.from("size")._.halve()._.add("position");
-centre.others((e) => e._.distance(e.from("size")._.halve()._.add("position")));`;
+const CODE = `const centre = root.from("size")
+  ._.halve()._.add("position");
+centre.others((e) => e._.distance(
+  e.from("size")._.halve()._.add("position")));`;
 
 /** The point where the line from the centre of `from` to the centre of `to` meets the edge of `to`. */
 function edge(from: Mover, to: Mover): readonly [number, number] {
@@ -91,6 +96,7 @@ function edge(from: Mover, to: Mover): readonly [number, number] {
 }
 
 interface Frame {
+  readonly lists: Readonly<Record<string, readonly { readonly key: string; readonly d: number }[]>>;
   readonly nearest: Readonly<Record<string, { readonly key: string; readonly d: number }>>;
   readonly overlapping: ReadonlySet<string>;
   readonly runs: number;
@@ -99,13 +105,17 @@ interface Frame {
 
 function evaluateFrame(p: { readonly distances: Program; readonly overlaps: Program }, s: Space): Frame {
   const t0 = performance.now();
+  const lists: Record<string, { key: string; d: number }[]> = {};
   const nearest: Record<string, { key: string; d: number }> = {};
   const overlapping = new Set<string>();
   for (const k of s.keys) {
     const r = p.distances.run({ space: s, origin: k });
     if (r.ok && isVexList(r.value)) {
+      const list: { key: string; d: number }[] = [];
+      lists[k] = list;
       for (const item of r.value.items) {
         if (!item.result.ok || typeof item.result.value !== "number") continue;
+        list.push({ key: item.key, d: item.result.value });
         const best = nearest[k];
         if (best === undefined || item.result.value < best.d) nearest[k] = { key: item.key, d: item.result.value };
       }
@@ -113,7 +123,7 @@ function evaluateFrame(p: { readonly distances: Program; readonly overlaps: Prog
     const o = p.overlaps.run({ space: s, origin: k });
     if (o.ok && typeof o.value === "number" && o.value > 0) overlapping.add(k);
   }
-  return { nearest, overlapping, runs: s.keys.length * 2, ms: performance.now() - t0 };
+  return { lists, nearest, overlapping, runs: s.keys.length * 2, ms: performance.now() - t0 };
 }
 
 /** The live hero. */
@@ -123,6 +133,7 @@ export default function LiveHero(): ReactElement {
   const [playing, setPlaying] = useState(false);
   const [visible, setVisible] = useState(true);
   const [ms, setMs] = useState(0);
+  const [focus, setFocus] = useState<string | undefined>(undefined);
   const root = useRef<HTMLElement>(null);
 
   // Motion starts only when the reader does not ask for reduced motion.
@@ -160,9 +171,24 @@ export default function LiveHero(): ReactElement {
     setMs((old) => (old === 0 ? frame.ms : old * 0.9 + frame.ms * 0.1));
   }, [frame]);
 
+  // The box under the pointer. The last box in the list is on top, so the search goes from the end.
+  const point = (e: PointerEvent<SVGSVGElement>): void => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * W;
+    const y = ((e.clientY - r.top) / r.height) * H;
+    const hit = KEYS.findLast((k) => {
+      const m = movers[k];
+      return m !== undefined && x >= m.position.x && x <= m.position.x + m.size.x && y >= m.position.y && y <= m.position.y + m.size.y;
+    });
+    setFocus(hit);
+  };
+  const focused = focus === undefined ? undefined : movers[focus];
+  const list = focus === undefined ? undefined : frame.lists[focus];
+  const best = focus === undefined ? undefined : frame.nearest[focus];
+
   return (
     <figure ref={root} className="vx-hero-live" aria-label="Live: Vex programs evaluate at each box in each frame">
-      <svg viewBox={`0 0 ${W * U} ${H * U}`} role="img" aria-label="Boxes that move. An arrow goes from each box to its nearest other box. A box with a red edge overlaps another box.">
+      <svg viewBox={`0 0 ${W * U} ${H * U}`} onPointerMove={point} onPointerDown={point} onPointerLeave={() => setFocus(undefined)} role="img" aria-label="Boxes that move. An arrow goes from each box to its nearest other box. A box with a red edge overlaps another box.">
         <defs>
           <pattern id="vx-hero-grid" width={U} height={U} patternUnits="userSpaceOnUse">
             <path d={`M ${U} 0 L 0 0 0 ${U}`} fill="none" stroke="var(--color-grid)" strokeWidth={1} />
@@ -185,11 +211,20 @@ export default function LiveHero(): ReactElement {
               height={m.size.y * U}
               rx={3}
               fill={hit ? "var(--color-mark-wash)" : "var(--color-accent-wash)"}
-              stroke={hit ? "var(--color-mark)" : "var(--color-ink)"}
-              strokeWidth={hit ? 2.5 : 1.5}
+              stroke={k === focus ? "var(--color-accent)" : hit ? "var(--color-mark)" : "var(--color-ink)"}
+              strokeWidth={k === focus ? 3 : hit ? 2.5 : 1.5}
             />
           );
         })}
+        {focused === undefined || list === undefined
+          ? null
+          : list.map((item) => {
+              const t = movers[item.key];
+              if (t === undefined) return null;
+              const [x1, y1] = edge(t, focused);
+              const [x2, y2] = edge(focused, t);
+              return <line key={`l-${item.key}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--color-accent)" strokeWidth={1} strokeDasharray="3 3" opacity={0.7} pointerEvents="none" />;
+            })}
         {KEYS.map((k) => {
           const n = frame.nearest[k];
           const a = movers[k];
@@ -200,6 +235,19 @@ export default function LiveHero(): ReactElement {
           return <line key={`a-${k}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--color-accent)" strokeWidth={2} markerEnd="url(#vx-hero-arrow)" />;
         })}
         <g pointerEvents="none" style={{ paintOrder: "stroke" }} stroke="var(--color-surface)" strokeWidth={4} strokeLinejoin="round">
+          {focused === undefined || list === undefined
+            ? null
+            : list.map((item) => {
+                const t = movers[item.key];
+                if (t === undefined) return null;
+                const [x1, y1] = edge(t, focused);
+                const [x2, y2] = edge(focused, t);
+                return (
+                  <text key={`d-${item.key}`} x={(x1 + x2) / 2} y={(y1 + y2) / 2 + 4} textAnchor="middle" fontFamily="var(--font-mono)" fontSize={11} fontWeight={item.key === best?.key ? 700 : 400} fill="var(--color-accent)">
+                    {item.d.toFixed(1)}
+                  </text>
+                );
+              })}
           {KEYS.map((k) => {
             const m = movers[k];
             return m === undefined ? null : (
@@ -211,10 +259,21 @@ export default function LiveHero(): ReactElement {
         </g>
       </svg>
       <figcaption>
-        <pre className="vx-hero-code">{CODE}</pre>
+        <pre className="vx-hero-code">
+          <Code code={CODE} />
+        </pre>
         <span className="vx-hero-legend">
-          <span style={{ color: "var(--color-accent)" }}>arrow</span>: the nearest other box.{" "}
-          <span style={{ color: "var(--color-mark)" }}>red edge</span>: the box overlaps another box.
+          {focus === undefined || list === undefined ? (
+            <>
+              <span style={{ color: "var(--color-accent)" }}>arrow</span>: the nearest other box.{" "}
+              <span style={{ color: "var(--color-mark)" }}>red edge</span>: the box overlaps another box. Point at a box to see its list.
+            </>
+          ) : (
+            <>
+              At <strong>{focus}</strong>, the program gives a list of {list.length} distances. The minimum is{" "}
+              <strong style={{ color: "var(--color-accent)" }}>{best?.d.toFixed(2)}</strong>, to {best?.key}.
+            </>
+          )}
         </span>
         <span className="vx-hero-stats">
           {frame.runs} programs in {ms.toFixed(2)} ms each frame

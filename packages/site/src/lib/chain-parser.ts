@@ -5,6 +5,8 @@
  * shared link with a program cannot run other code in the browser.
  */
 
+import { isExpr, type Expr } from "@mark1russell7/vex";
+
 /** A position in the source text, for error messages. */
 export interface Span {
   readonly start: number;
@@ -371,4 +373,17 @@ export function runChain(program: ChainProgram, scope: Readonly<Record<string, u
     vars.set(name, ev(node, { vars }));
   }
   return ev(program.result, { vars });
+}
+
+/**
+ * This function gives the program of the value of a chain program. The value must be a chain or a list chain. A text
+ * that ends with `._`, an op without a call or a plain value gives a `ChainError`.
+ */
+export function programOf(value: unknown, src: string): Expr {
+  const all = { start: 0, end: src.length };
+  if (typeof value === "function") throw new ChainError("the program ends with an op or a member without a call. Add the call, for example ._.add(1)", { start: Math.max(0, src.trimEnd().length - 1), end: src.trimEnd().length });
+  const program = typeof value === "object" && value !== null ? (value as { readonly program?: unknown }).program : undefined;
+  if (typeof program === "function") throw new ChainError("the program ends with ._, so an op name is necessary, for example ._.add(1)", { start: Math.max(0, src.trimEnd().length - 1), end: src.trimEnd().length });
+  if (!isExpr(program)) throw new ChainError("the program must end with a chain, for example root.from(...)", all);
+  return program;
 }

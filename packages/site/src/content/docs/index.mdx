@@ -23,7 +23,14 @@ hero:
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components";
+import Showcase from "../../components/Showcase.astro";
 import Stepper from "../../components/Stepper.tsx";
+
+## Explore
+
+Each page below is interactive. The programs run in your browser, with the same packages that you install from npm.
+
+<Showcase />
 
 ## Boxes on graph paper
 
@@ -50,9 +57,25 @@ Drag a box. Each program on this page reads the same four boxes, so each one eva
   </Card>
 </CardGrid>
 
-## Where to go next
+## Use it in your code
 
-- [The tour](learn/tour/) adds one call at a time to a chain.
-- [The spreadsheet view](learn/spreadsheet/) shows a program as a column of formulas.
-- [Why none?](errors/ref/) explains each error code with a live example.
-- [The specification](spec/) shows the test status of each requirement.
+Install the core and the domains. Then build a chain over your own records. The chain has the type of its result.
+
+```ts
+import { space, vex } from "@mark1russell7/vex";
+import { Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
+
+const A = { position: new Vec2(2, 2), size: new Vec2(5, 4) };
+const B = { position: new Vec2(6, 5), size: new Vec2(4, 4) };
+
+const separated = vex(Vec2Domain)
+  .over(space.record({ A, B }))
+  .from("position")._.add("size")
+  .other()._.subtract("position")
+  ._.anyNonPositive();
+
+separated.at("A"); // { tag: "some", value: false }
+separated.explain("A"); // a trace of each step
+```
+
+[The tour](learn/tour/) adds one call at a time to a chain. [The API](reference/api/) lists each export, and [the specification](spec/) shows the test status of each requirement.

@@ -4,13 +4,16 @@
  * at each record, and draws the results on the canvas of the space. It shows the trace at the selected origin and the
  * program as JSON.
  * "Copy link" puts the space and the code in the address, so a link opens the same program.
+ * The editor is a text area over a highlighted copy of the code. The text of the text area is transparent, so the
+ * reader sees the colours of the copy and the caret of the text area. A wavy line marks the position of an error.
  */
 import { domainOf, evaluate, explain, isVexList, serialize, type Expr, type Result } from "@mark1russell7/vex";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import { ChainError, parseChain, runChain } from "../lib/chain-parser.ts";
+import { ChainError, parseChain, programOf, runChain } from "../lib/chain-parser.ts";
 import { errorHref, show, showResult } from "../lib/format.ts";
 import { LAB_SPACES, labSpace, type LabSpaceId } from "../lib/lab-spaces.ts";
 import { resetBoxes, useBoxes } from "../lib/specimen.ts";
+import { Code } from "./Code.tsx";
 import { LabCanvas } from "./LabCanvas.tsx";
 
 const REDUCTIONS = ["min()", "max()", "sum()", "mean()", "count()", "any()", "all()", "values()", "first()"] as const;
@@ -70,10 +73,7 @@ export default function Lab(): ReactElement {
 
   const built = useMemo((): { readonly program: Expr } | { readonly error: ChainError } => {
     try {
-      const chain = runChain(parseChain(code), { root });
-      const program = (chain as { readonly program?: unknown } | null)?.program;
-      if (program === undefined) throw new ChainError("the program must end with a chain, for example root.from(...)", { start: 0, end: code.length });
-      return { program: program as Expr };
+      return { program: programOf(runChain(parseChain(code), { root }), code) };
     } catch (e) {
       return { error: e instanceof ChainError ? e : new ChainError(String(e), { start: 0, end: code.length }) };
     }
@@ -157,14 +157,22 @@ export default function Lab(): ReactElement {
               ))}
             </select>
           </label>
-          <textarea
-            className="vx-lab-code"
-            aria-label="The Vex chain"
-            spellCheck={false}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            rows={Math.min(14, Math.max(5, code.split("\n").length + 1))}
-          />
+          <div className="vx-lab-editor-box">
+            <pre className="vx-lab-code vx-lab-shadow" aria-hidden="true">
+              <Code code={code} mark={"error" in built ? built.error.span : undefined} />
+              {"\n"}
+            </pre>
+            <textarea
+              className="vx-lab-code vx-lab-input"
+              aria-label="The Vex chain"
+              spellCheck={false}
+              autoCapitalize="off"
+              autoComplete="off"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              rows={Math.max(5, code.split("\n").length + 1)}
+            />
+          </div>
           {"error" in built ? (
             <p className="vx-lab-error" role="alert">
               <strong>{lineCol(code, built.error.span.start)}:</strong> {built.error.message}

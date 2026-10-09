@@ -44,6 +44,8 @@ export default defineConfig({
         { tag: "meta", attrs: { property: "og:image:alt", content: "Vex: typed spreadsheet formulas over TypeScript objects. Boxes on graph paper with arrows to the nearest box." } },
         { tag: "meta", attrs: { name: "twitter:image", content: card } },
         { tag: "meta", attrs: { name: "theme-color", content: "#1f3fbf" } },
+        // The owner proves the ownership of the site to Google Search Console with this tag.
+        { tag: "meta", attrs: { name: "google-site-verification", content: "du_C4Y04G9XX4VZEjxZEcBq3e28zER6jS1H_NYgIaEY" } },
         { tag: "meta", attrs: { name: "keywords", content: "TypeScript, spreadsheet formulas, expression language, DSL, computed fields, rules engine, layout, declarative, functional programming, comonad, property-based testing" } },
       ],
       logo: { src: "./src/assets/mark.svg", replacesTitle: false },

@@ -318,9 +318,20 @@ export interface SheetRow<K extends string, Cols> {
  * other columns with `cell`. Each evaluation evaluates a cell once, and each cell on a cycle of references gives
  * `#CYCLE!`. A sheet is immutable: `column` gives a new sheet.
  */
-export interface Sheet<Ctx extends ChainContext, Cols> {
-  /** This method gives a new sheet with one more column. The formula gets a root with `cell`. */
-  column<const N extends string, C extends ChainBase<Ctx, unknown>>(name: N, formula: (r: SheetRoot<Ctx, Cols>) => C): Sheet<Ctx, Cols & { readonly [P in N]: ValueOf<C> }>;
+export interface Sheet<Ctx extends ChainContext, Cols, Decl = object> {
+  /**
+   * This method gives a new sheet with one more column. The formula gets a root with `cell`. If `declare` gave the
+   * column a type, the formula must give a value of that type.
+   */
+  column<const N extends string, C extends ChainBase<Ctx, DeclaredType<Decl, N>>>(
+    name: N,
+    formula: (r: SheetRoot<Ctx, Cols & Decl>) => C,
+  ): Sheet<Ctx, Cols & { readonly [P in N]: ValueOf<C> }, Decl>;
+  /**
+   * This method gives the types of columns before their formulas. A formula can then read a declared column with
+   * `cell` and its type: the column itself (a recurrence) or a later column. It has no effect at run time.
+   */
+  declare<D extends Readonly<Record<string, unknown>>>(): Sheet<Ctx, Cols, Decl & D>;
   /** The program of each column. */
   readonly columns: Readonly<Record<string, Expr>>;
   /** This method evaluates one cell, and gives the error if there is one. */
@@ -332,6 +343,9 @@ export interface Sheet<Ctx extends ChainContext, Cols> {
   /** This method evaluates each cell, in key order, with one result for each cell. */
   table(): readonly SheetRow<Ctx["keys"], Cols>[];
 }
+
+/** The declared type of the column `N`, or `unknown` for a column without a declaration. */
+export type DeclaredType<Decl, N extends string> = N extends keyof Decl ? Decl[N] : unknown;
 
 /** The options of the builder. */
 export interface VexOptions<F extends FnTable = FnTable> {
@@ -640,6 +654,9 @@ class SheetImpl {
   }
   get columns(): Readonly<Record<string, Expr>> {
     return Object.freeze(Object.fromEntries(this.#columns));
+  }
+  declare(): SheetImpl {
+    return this;
   }
   column(name: string, formula: (r: SheetRootImpl) => { readonly program: Expr }): SheetImpl {
     const program = formula(new SheetRootImpl(this.#env)).program;

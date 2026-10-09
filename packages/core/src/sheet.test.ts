@@ -71,6 +71,27 @@ describe("sheets (SHEET.*)", () => {
     expect(value(s.result("4999", "total"))).toBe((5000 * 5001) / 2);
   });
 
+  it("SHEET.DECLARE: declare gives the type of a column before its formula, for a recurrence and a forward read", () => {
+    const rows = vex(Num).over(space.array([{ v: 1 }, { v: 2 }, { v: 4 }]));
+    const s = rows
+      .sheet()
+      .declare<{ total: number; double: number }>()
+      .column("total", (r) => r.from("v")._.plus(r.start(r.cell("total", [offset(-1)])).ifError(0)))
+      .column("early", (r) => r.start(r.cell("double"))._.plus(1))
+      .column("double", (r) => r.from("v")._.plus("v"));
+    expectTypeOf(s.result("0", "total")).toEqualTypeOf<Result<number>>();
+    expectTypeOf(s.result("0", "early")).toEqualTypeOf<Result<number>>();
+    expect(s.table().map((row) => [value(row.cells.total), value(row.cells.early), value(row.cells.double)])).toEqual([
+      [1, 3, 2],
+      [3, 5, 4],
+      [7, 9, 8],
+    ]);
+    // @ts-expect-error -- the declared type of "total" is string, but the formula gives a number
+    rows.sheet().declare<{ total: string }>().column("total", (r) => r.from("v"));
+    // @ts-expect-error -- "missing" has no declaration and no earlier formula, so its value is unknown and has no ._
+    rows.sheet().column("x", (r) => r.start(r.cell("missing"))._.plus(1));
+  });
+
   it("SHEET.CYCLE: each cell on a cycle gives #CYCLE!, also a reference to itself and a cycle across keys", () => {
     const s = root
       .sheet()

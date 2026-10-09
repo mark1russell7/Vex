@@ -34,12 +34,13 @@ A column can read itself at another key. In an array space, the move `offset(-1)
 const rows = vex(NumDomain).over(space.array([{ v: 4 }, { v: 1 }, { v: 3 }]));
 const total = rows
   .sheet()
-  .column("total", (r) => r.from("v")._.add(r.start(r.cell<number>("total", [offset(-1)])).ifError(0)));
+  .declare<{ total: number }>()
+  .column("total", (r) => r.from("v")._.add(r.start(r.cell("total", [offset(-1)])).ifError(0)));
 
 total.table().map((row) => row.cells.total); // => [ok(4), ok(5), ok(8)]
 ```
 
-The first row has no row above, so the read gives `#REF!`, and `ifError(0)` changes it to 0. A column that reads itself or a later column gives the type with `cell<T>`.
+The first row has no row above, so the read gives `#REF!`, and `ifError(0)` changes it to 0. `declare` gives the type of a column before its formula, so a column can read itself or a later column with that type. The formula of a declared column must give that type. Without `declare`, `cell<T>` gives the type.
 
 A sheet evaluates the earlier keys first. Thus a running total over thousands of rows reads finished cells, and does not go deep into the call stack.
 

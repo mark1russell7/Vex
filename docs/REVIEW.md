@@ -826,7 +826,7 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 
 ## 14. Execution record
 
-*Updated: 2026-10-08.* This section records what the work did, and where the work is different from the plan.
+*Updated: 2026-10-09.* This section records what the work did, and where the work is different from the plan.
 
 ### 14.1 Status of the phases
 
@@ -835,7 +835,7 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 | P0 Migrate | Done | Commit `890e6a3`. CI is green on Node 22, 24 and 26. |
 | P1 Kernel | Done | Commit `0357f95` |
 | P2 Surface | Done | Commits `749a3e1` and `1c9a17a`. `@vex/legacy` is gone. |
-| P3 Assurance | Done, with the changes of §14.2 | Commits `7e76f54`, `84234e8`, `b815206` and `26d9b7f`. The mutation score is 90.7 %. |
+| P3 Assurance | Done, with the changes of §14.2 | Commits `7e76f54`, `84234e8`, `b815206` and `26d9b7f`. The mutation score is 99.0 %. |
 | P4 Site | Done | Commits `89161c6`, `a1c7cfe` and `643aaa8`. The site is live at [mark1russell7.github.io/vex](https://mark1russell7.github.io/vex/). |
 | P5 Interop | Done, except the items of the owner (§14.4) | Commits `b815206` (build, release), `d3be6d7` (sheets, pilot) and `6eff59c` (`compile`) |
 
@@ -854,10 +854,10 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 ### 14.3 Measurements
 
 - Coverage of `@vex/core`: 100 % of the statements, branches, functions and lines. The thresholds are 98, 96, 98 and 98.
-- Mutation score of `@vex/core`: 90.7 %. The tests found 1898 mutants, and 194 mutants survived. The nightly workflow fails under 90 %.
+- Mutation score of `@vex/core`: 99.0 %. The tests found 2048 mutants, 18 mutants timed out, and 20 mutants survived. The nightly workflow fails under 95 %. The score was 90.7 % before the contract tests.
 - The error catalog (`__golden__/errors.txt`) found three defects. An extension error had no location, a `where` test had the wrong focus, and an offset message had bad grammar. The fixes added the spec rule EVAL.LOCATION.
 - Speed with 60 boxes, measured on one machine: the closure compiler made the nearest-box program 2.0 times faster. It is approximately 17 times slower than hand-written loops (36 times before). One step of the Game of Life on a 16 by 16 grid is 2.1 times faster. It is approximately 36 times slower than hand-written loops (73 times before).
-- Tests: 181 unit and property tests, 20 doc tests, 2 schema tests and 35 browser tests.
+- Tests: 438 unit and property tests, 25 doc tests and 127 browser tests. The browser tests include axe-core on each page in two themes, and a size budget.
 
 ### 14.4 Open items
 
@@ -872,16 +872,20 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 - Not done, on purpose: a cache of methods for each prototype. A prototype can change after the first lookup, and then a cache gives an old method. The gain was 11 % of the time of a call.
 - Not done: one vector library for the family. render and Graph keep their own vector code until `@mark1russell7/vex-domains` is on npm. A change of Graph is a decision of its owner.
 - D5 done: the shared Optional is the new repository [`optional`](https://github.com/mark1russell7/optional). render gives its exports from `@render/optional`, and the type `Optional` of Vex is its type. Graph keeps its sentinel form, and the package has converters for it.
-- D8 done: the published names are `@mark1russell7/vex`, `@mark1russell7/vex-domains` and `@mark1russell7/vex-testkit`, and the packages are not private. The first release waits for an npm login of the owner.
+- D8 done: the published names are `@mark1russell7/vex`, `@mark1russell7/vex-domains` and `@mark1russell7/vex-testkit`, and the packages are not private. Version 0.2.0 is on npm. Each package trusts the release workflow (trusted publishing), so the workflow has no token.
 - D11 done: cue (`9c99ad6`) sets `types` in the node preset and removes `diagnostics`. The template (`aac1840`) makes source packages with a `tsconfig.test.json`, and anchors the Python block of `.gitignore`.
 - D12 done: the workspace `CLAUDE.md` tells which scaffolding rule applies in `client` and which in a template monorepo.
-- D9 waits for the owner: the rename of the repository needs a permission that the agent does not have. The branch `rename-vex` has the changes of the URLs for after the rename.
+- D9 done: the owner renamed the repository to `mark1russell7/vex`. The site base is `/vex/`.
 - §13 done: the local Node is 24 (LTS). Jqy's `dump:src` works, and lag does not track `.claude/settings.local.json`. render's `roadmap` branch was already in `main`.
 - The research reports in `docs/research/` are in the repository, without local paths and without details of private repositories. The lineage report (03) is mostly about private repositories, so it stays local, and its links in this document work only in a local copy.
 - Polish done: `withOptions({ fns })` gives the types of the free functions to the chain. `call(name, ...args)` applies one with type checks (spec BUILD.CALL and TYPE.CALL).
 - Polish done: `sheet().declare<T>()` gives types to a column that reads itself or a later column (spec SHEET.DECLARE).
 - Polish done: the root `vitest.config.ts` measures the three published packages. Each package has the gates 98, 96, 98 and 98.
 - Polish done: the mutation lane fails under 95 %. The contract tests (`contracts.test.ts`) check the exact messages and the inputs at the edges.
+- Site done: axe-core checks each page in the light and the dark theme with the rules of WCAG 2.1 AA. Each page loads 256 kB gzip or less.
+- Site done: the home page has a live hero, a showcase of the interactive pages, and a sample for your code. The README shows a recording of the hero.
+- Site done: the Lab reads typed chains with a safe reader, in four spaces. The editor highlights the code and marks the position of an error.
+- Owner items: the Renovate app, Google Search Console, and the social preview image of the repository (`packages/site/public/og.png`).
 
 ---
 

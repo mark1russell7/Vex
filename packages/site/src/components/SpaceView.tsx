@@ -76,7 +76,7 @@ export function SpaceView(props: SpaceViewProps): ReactElement {
       viewBox={`0 0 ${COLS * UNIT} ${ROWS * UNIT}`}
       role="group"
       aria-label={props.label}
-      style={{ width: "100%", height: "auto", display: "block", touchAction: "none", borderBottom: "1px solid var(--color-rule)" }}
+      style={{ width: "100%", height: "auto", maxHeight: "30rem", display: "block", touchAction: "none", borderBottom: "1px solid var(--color-rule)" }}
       onPointerMove={(e) => {
         if (drag === undefined) return;
         const [gx, gy] = toGrid(e);
@@ -127,16 +127,26 @@ export function SpaceView(props: SpaceViewProps): ReactElement {
               strokeWidth={isOrigin ? 3 : isFocus ? 2.5 : 1.5}
               strokeDasharray={isFocus && !isOrigin ? "6 4" : undefined}
             />
-            <text x={b.position.x * UNIT + 6} y={b.position.y * UNIT + 18} fontFamily="var(--font-mono)" fontSize={14} fontWeight={700} fill="var(--color-ink)">
-              {k}
-            </text>
-            <text x={b.position.x * UNIT + 22} y={b.position.y * UNIT + 18} fontFamily="var(--font-sans)" fontSize={11} fill="var(--color-ink-muted)">
-              {b.name}
-            </text>
             <circle cx={b.position.x * UNIT} cy={b.position.y * UNIT} r={3} fill="var(--color-ink)" />
           </g>
         );
       })}
+      {/* The labels are a layer above all boxes, with a halo, so the border of another box never hides a label. */}
+      <g pointerEvents="none" aria-hidden="true" style={{ paintOrder: "stroke" }} stroke="var(--color-page)" strokeWidth={4} strokeLinejoin="round">
+        {(Object.keys(boxes) as BoxKey[]).map((k) => {
+          const b = boxes[k];
+          return (
+            <g key={k} opacity={dimKeys.includes(k) ? 0.35 : 1}>
+              <text x={b.position.x * UNIT + 6} y={b.position.y * UNIT + 19} fontFamily="var(--font-mono)" fontSize={16} fontWeight={700} fill="var(--color-ink)">
+                {k}
+              </text>
+              <text x={b.position.x * UNIT + 22} y={b.position.y * UNIT + 19} fontFamily="var(--font-sans)" fontSize={13} fill="var(--color-ink-secondary)">
+                {b.name}
+              </text>
+            </g>
+          );
+        })}
+      </g>
       {reads
         .filter((r) => r.from !== r.to && r.from in boxes && r.to in boxes)
         .map((r, i) => {

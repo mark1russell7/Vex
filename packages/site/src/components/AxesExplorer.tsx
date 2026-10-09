@@ -98,7 +98,7 @@ export default function AxesExplorer(): ReactElement {
       <SpaceView boxes={boxes} origin={origin} onSelect={setOrigin} overlay={overlay} label={`The boxes. The origin is ${origin}. Select a box to make it the origin.`} />
       <div className="vx-body" style={{ display: "grid", gap: "var(--space-4)", gridTemplateColumns: "repeat(auto-fit, minmax(16rem, 1fr))" }}>
         <div>
-          <table className="vx-table" aria-label="The relation of the axis: origins in rows, targets in columns">
+          <table className="vx-table" style={{ width: "100%" }} aria-label="The relation of the axis: origins in rows, targets in columns">
             <caption className="vx-muted" style={{ textAlign: "left" }}>
               The relation. A row is an origin, a column is a target.
             </caption>

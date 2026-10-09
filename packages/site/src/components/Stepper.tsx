@@ -4,7 +4,7 @@
  * shows the result of the program at each origin (the start axis).
  */
 import { evaluate, explain, type Expr, type TraceEvent } from "@mark1russell7/vex";
-import { useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { errorHref, show, showResult } from "../lib/format.ts";
 import { programById, type SiteProgram } from "../lib/programs.ts";
 import { DOMAINS, resetBoxes, rootOf, spaceOf, useBoxes, type BoxKey } from "../lib/specimen.ts";
@@ -19,6 +19,9 @@ export interface StepperProps {
   readonly origin?: BoxKey;
   readonly title?: string;
 }
+
+/** The height of one line of the trace, in rem. */
+const LINE = 1.5;
 
 function indentOf(e: TraceEvent): number {
   return Math.min(e.path.length, 8);
@@ -39,6 +42,18 @@ export default function Stepper(props: StepperProps): ReactElement {
     const all = KEYS.map((k) => ({ key: k, result: evaluate(expr, { ...opts, origin: k }) }));
     return { expr, trace, all };
   }, [program, boxes, origin]);
+
+  // The list follows the current step: the step stays in view, four lines below the top of the list.
+  const list = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    const ol = list.current;
+    if (ol === null) return;
+    const n = view?.trace.events.length ?? 0;
+    const i = step === undefined ? n - 1 : Math.min(step, n - 1);
+    const li = ol.querySelector<HTMLElement>(`[data-step="${i}"]`);
+    // A whole number of lines, so the list never shows a part of a line.
+    if (li !== null) ol.scrollTop = Math.max(0, (i - 4) * li.offsetHeight);
+  }, [step, view]);
 
   if (program === undefined || view === undefined) return <p className="vx-muted">There is no program with the id {props.program}.</p>;
 
@@ -99,11 +114,32 @@ export default function Stepper(props: StepperProps): ReactElement {
             step {at + 1} of {events.length}
           </span>
         </div>
-        <ol style={{ listStyle: "none", margin: 0, padding: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", maxHeight: "16rem", overflowY: "auto" }}>
+        <ol
+          ref={list}
+          aria-label="The steps of the evaluation"
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-sm)",
+            // Ten whole lines: the list scrolls by lines, so no line shows only in part.
+            maxHeight: `${10 * LINE}rem`,
+            overflowY: "auto",
+            scrollSnapType: "y mandatory",
+          }}
+        >
           {events.map((e, i) => (
             <li
               key={`${e.path.join(".")}-${i}`}
+              data-step={i}
               style={{
+                height: `${LINE}rem`,
+                lineHeight: `${LINE}rem`,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                scrollSnapAlign: "start",
                 paddingLeft: `${indentOf(e)}ch`,
                 opacity: i > at ? 0.35 : 1,
                 background: i === at ? "var(--color-accent-wash)" : undefined,
@@ -111,7 +147,8 @@ export default function Stepper(props: StepperProps): ReactElement {
               }}
             >
               <button type="button" onClick={() => setStep(i)} style={{ all: "unset", cursor: "pointer", display: "block", width: "100%" }}>
-                <span style={{ color: "var(--color-ink-muted)" }}>{e.tag}</span> {e.label}
+                {e.label.startsWith(e.tag) ? null : <span style={{ color: "var(--color-ink-muted)" }}>{e.tag} </span>}
+                {e.label}
                 <span style={{ color: "var(--color-ink-muted)" }}> @{e.focus}</span>
                 {" → "}
                 {e.result.ok ? (

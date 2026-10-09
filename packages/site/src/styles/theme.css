@@ -206,3 +206,92 @@ header.header {
     scroll-behavior: auto !important;
   }
 }
+
+/* The live hero: the scene beside the text on wide screens, below it on narrow screens. */
+.vx-hero {
+  display: grid;
+  gap: var(--space-6, 2rem);
+  align-items: center;
+}
+@media (min-width: 64rem) {
+  .vx-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .vx-hero .hero .stack,
+  .vx-hero .hero .copy {
+    text-align: start;
+    align-items: flex-start;
+  }
+}
+.vx-hero .hero {
+  padding-bottom: 0;
+}
+.vx-hero-live {
+  margin: 0;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 12px 32px -12px rgb(0 0 0 / 0.18);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius, 6px);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.vx-hero-live svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.vx-hero-live figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  border-top: 1px solid var(--color-rule);
+  font-size: var(--text-sm, 0.875rem);
+}
+.vx-hero-code {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: var(--text-xs, 0.75rem);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.vx-hero-legend {
+  flex: 1 1 16rem;
+  color: var(--color-ink-secondary);
+}
+.vx-hero-stats {
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The install line under the tagline of the home page. */
+.vx-install {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin-top: var(--space-4, 1rem);
+  padding: var(--space-1, 0.25rem) var(--space-1, 0.25rem) var(--space-1, 0.25rem) var(--space-3, 0.75rem);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs, 0.75rem);
+  max-width: 100%;
+}
+.vx-install code {
+  background: none;
+  border: 0;
+  padding: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+/* Starlight puts a top margin between adjacent elements of the page text. Inside a widget, the layout is a flex
+   row or a grid, so that margin only moves the controls out of line. */
+.vx-frame :is(button, .vx-button, label, output, input, select, svg, table, pre, figure, li) {
+  margin-top: 0;
+}

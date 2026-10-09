@@ -131,3 +131,23 @@ test("the tree explorer gives the targets of each tree axis", async ({ page }) =
   await explorer.getByRole("button", { name: "siblings" }).click();
   await expect(explorer.getByTestId("tree-targets")).toHaveText("siblings of Di: Cy, Fa");
 });
+
+test("the live hero evaluates in each frame, and the reader can pause it", async ({ page }) => {
+  await page.goto("./");
+  const hero = page.getByRole("figure", { name: "Live: Vex programs evaluate at each box in each frame" });
+  await expect(hero).toBeVisible();
+  await expect(hero.getByText(/18 programs in \d+\.\d+ ms each frame/)).toBeVisible();
+  const pause = hero.getByRole("button", { name: "Pause" });
+  await expect(pause).toBeVisible();
+  await pause.click();
+  await expect(hero.getByRole("button", { name: "Play" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy the install command" })).toBeVisible();
+});
+
+test("with reduced motion, the hero does not move until the reader selects Play", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  await page.goto("./");
+  await expect(page.getByRole("figure", { name: "Live: Vex programs evaluate at each box in each frame" }).getByRole("button", { name: "Play" })).toBeVisible();
+  await context.close();
+});

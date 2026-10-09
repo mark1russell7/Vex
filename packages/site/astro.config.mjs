@@ -23,6 +23,7 @@ export default defineConfig({
         "./src/styles/tokens.css",
         "./src/styles/theme.css",
       ],
+      components: { Hero: "./src/components/Hero.astro" },
       sidebar: [
         { label: "Learn", items: ["learn/tour", "learn/concepts", "learn/spreadsheet", "learn/sheets", "learn/axes", "learn/errors"] },
         { label: "Lab", items: ["lab"] },

@@ -1,12 +1,23 @@
 # Vex
 
+[![npm](https://img.shields.io/npm/v/@mark1russell7/vex)](https://www.npmjs.com/package/@mark1russell7/vex) [![CI](https://github.com/mark1russell7/vex/actions/workflows/ci.yml/badge.svg)](https://github.com/mark1russell7/vex/actions/workflows/ci.yml) [![site](https://img.shields.io/badge/docs-live-1f3fbf)](https://mark1russell7.github.io/vex/) [![license](https://img.shields.io/npm/l/@mark1russell7/vex)](./LICENSE)
+
 Vex is a TypeScript library for typed spreadsheet formulas over domain objects.
+
+**[The site](https://mark1russell7.github.io/vex/)** has a tour, live examples, the Lab and the specification with the test status of each rule.
+
+```sh
+npm install @mark1russell7/vex @mark1russell7/vex-domains
+```
 
 A Vex program runs at one position in a collection of records. It reads fields relative to that position, combines them with domain operations, and gives a total result. A failure does not throw. It gives an error value that tells you what went wrong. Axes lift one program to all positions, or to relations between positions.
 
 ```ts doctest
 import { space, vex } from "@mark1russell7/vex";
-import { Vec2Domain } from "@mark1russell7/vex-domains";
+import { Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
+
+const A = { position: new Vec2(2, 2), size: new Vec2(5, 4) };
+const B = { position: new Vec2(6, 5), size: new Vec2(4, 4) };
 
 const separated = vex(Vec2Domain)
   .over(space.record({ A, B }))
@@ -21,7 +32,7 @@ separated.explain("A"); // a trace of each step
 
 ## Status
 
-Vex 1.0 is in development. The specification is in [`spec/README.md`](./spec/README.md), and the plan is in [`docs/REVIEW.md`](./docs/REVIEW.md). The code before the rebuild is in the git history (package `@vex/legacy`, removed after the parity tests passed).
+Version 0.2 is on npm. The specification (Vex 1.0) is in [`spec/README.md`](./spec/README.md), and the plan is in [`docs/REVIEW.md`](./docs/REVIEW.md). The code before the rebuild is in the git history (package `@vex/legacy`, removed after the parity tests passed).
 
 | Package | Contents |
 |---|---|

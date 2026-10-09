@@ -3,6 +3,20 @@
   "name": "@mark1russell7/vex-domains",
   "version": "0.2.0",
   "description": "Vex domains: 2D vectors, named-component vectors, colors, angles, numbers and booleans.",
+  "keywords": [
+    "vex",
+    "vector",
+    "vec2",
+    "color",
+    "angle",
+    "domain",
+    "typescript"
+  ],
+  "homepage": "https://mark1russell7.github.io/vex/",
+  "bugs": {
+    "url": "https://github.com/mark1russell7/vex/issues"
+  },
+  "author": "Mark Russell (https://github.com/mark1russell7)",
   "license": "MIT",
   "repository": {
     "type": "git",

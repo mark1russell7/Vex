@@ -3,6 +3,19 @@
   "name": "@mark1russell7/vex-testkit",
   "version": "0.2.0",
   "description": "Vex test kit: fast-check arbitraries, domain law checks and a reference interpreter.",
+  "keywords": [
+    "vex",
+    "property-based-testing",
+    "fast-check",
+    "laws",
+    "testing",
+    "typescript"
+  ],
+  "homepage": "https://mark1russell7.github.io/vex/",
+  "bugs": {
+    "url": "https://github.com/mark1russell7/vex/issues"
+  },
+  "author": "Mark Russell (https://github.com/mark1russell7)",
   "license": "MIT",
   "repository": {
     "type": "git",

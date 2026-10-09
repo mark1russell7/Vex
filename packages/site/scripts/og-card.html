@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- The share card of the site (Open Graph and Twitter), 1200 by 630. scripts/og-image.mjs renders it to public/og.png. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        --ink: #14161f;
+        --ink-2: #4a5068;
+        --paper: #f5f6fa;
+        --grid: #e2e5ee;
+        --accent: #1f3fbf;
+        --accent-wash: #e3e8fb;
+        --mark: #c2301f;
+        --mark-wash: #f8e4e1;
+      }
+      * { box-sizing: border-box; margin: 0; }
+      body { width: 1200px; height: 630px; overflow: hidden; background: var(--paper); font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); }
+      .card {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        padding: 64px 72px;
+        background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 24px 24px;
+        display: grid;
+        grid-template-columns: 1fr 520px;
+        gap: 40px;
+        align-items: center;
+      }
+      .mark { display: flex; align-items: center; gap: 18px; }
+      .mark svg { width: 64px; height: 64px; }
+      h1 { font-size: 112px; font-weight: 800; letter-spacing: -3px; line-height: 1; }
+      .tag { margin-top: 28px; font-size: 38px; line-height: 1.25; color: var(--ink); font-weight: 600; }
+      .sub { margin-top: 18px; font-size: 24px; line-height: 1.4; color: var(--ink-2); }
+      .foot { position: absolute; left: 72px; bottom: 44px; display: flex; gap: 18px; align-items: center; font-family: Consolas, "Cascadia Mono", monospace; font-size: 22px; }
+      .pill { padding: 10px 18px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; }
+      .url { color: var(--accent); font-weight: 700; }
+      .scene { background: #fff; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 0 24px 60px -24px rgba(20, 22, 31, 0.45); overflow: hidden; }
+      .scene svg { display: block; width: 100%; height: auto; }
+      .code { border-top: 2px solid var(--grid); padding: 14px 18px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 17px; line-height: 1.45; color: var(--ink); background: #fbfbfd; }
+      .code .k { color: var(--accent); font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div>
+        <div class="mark">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="3" y="13" width="14" height="14" rx="2" fill="#fff" stroke="#14161f" stroke-width="2.5" />
+            <rect x="15" y="4" width="13" height="13" rx="2" fill="#f8e4e1" stroke="#c2301f" stroke-width="2.5" />
+            <line x1="10" y1="20" x2="19" y2="12" stroke="#1f3fbf" stroke-width="2.5" />
+          </svg>
+          <h1>Vex</h1>
+        </div>
+        <p class="tag">Typed spreadsheet formulas over TypeScript objects</p>
+        <p class="sub">One formula, evaluated at each record. Axes, sheets and trees. An error value with a reason, never an exception.</p>
+      </div>
+      <div class="scene">
+        <svg viewBox="0 0 520 300" aria-hidden="true">
+          <defs>
+            <pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0 L0 0 0 20" fill="none" stroke="#e2e5ee" stroke-width="1" /></pattern>
+            <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1f3fbf" /></marker>
+          </defs>
+          <rect width="520" height="300" fill="url(#g)" />
+          <rect x="40" y="40" width="120" height="90" rx="4" fill="#f8e4e1" stroke="#c2301f" stroke-width="3" />
+          <rect x="130" y="100" width="100" height="80" rx="4" fill="#f8e4e1" stroke="#c2301f" stroke-width="3" />
+          <rect x="320" y="50" width="70" height="120" rx="4" fill="#e3e8fb" stroke="#14161f" stroke-width="2" />
+          <rect x="380" y="210" width="100" height="60" rx="4" fill="#e3e8fb" stroke="#14161f" stroke-width="2" />
+          <rect x="60" y="220" width="150" height="50" rx="4" fill="#e3e8fb" stroke="#14161f" stroke-width="2" />
+          <line x1="320" y1="110" x2="234" y2="130" stroke="#1f3fbf" stroke-width="3" marker-end="url(#a)" />
+          <line x1="410" y1="210" x2="370" y2="174" stroke="#1f3fbf" stroke-width="3" marker-end="url(#a)" />
+          <line x1="135" y1="220" x2="160" y2="184" stroke="#1f3fbf" stroke-width="3" marker-end="url(#a)" />
+          <g font-family="Consolas, monospace" font-size="18" font-weight="700" fill="#14161f">
+            <text x="48" y="62">A</text><text x="138" y="122">B</text><text x="328" y="72">C</text><text x="388" y="232">D</text><text x="68" y="242">E</text>
+          </g>
+        </svg>
+        <div class="code">root.from(<span class="k">"position"</span>)<br />&nbsp;&nbsp;.others((e) =&gt; e._.distance(<span class="k">"position"</span>))<br />&nbsp;&nbsp;.min()</div>
+      </div>
+      <div class="foot">
+        <span class="pill">npm i @mark1russell7/vex</span>
+        <span class="url">mark1russell7.github.io/vex</span>
+      </div>
+    </div>
+  </body>
+</html>

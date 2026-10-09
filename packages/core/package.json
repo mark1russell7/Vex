@@ -3,6 +3,23 @@
   "name": "@mark1russell7/vex",
   "version": "0.2.0",
   "description": "Vex: typed spreadsheet formulas over domain objects. The kernel and the typed builder.",
+  "keywords": [
+    "typescript",
+    "spreadsheet",
+    "formulas",
+    "expression-language",
+    "dsl",
+    "computed-fields",
+    "rules-engine",
+    "declarative",
+    "layout",
+    "functional-programming"
+  ],
+  "homepage": "https://mark1russell7.github.io/vex/",
+  "bugs": {
+    "url": "https://github.com/mark1russell7/vex/issues"
+  },
+  "author": "Mark Russell (https://github.com/mark1russell7)",
   "license": "MIT",
   "repository": {
     "type": "git",

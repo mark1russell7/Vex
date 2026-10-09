@@ -870,7 +870,7 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 - The packed layout of Graph is an ordered fold. It is not a good fit for Vex formulas.
 - Later work: faster op lookup (a cache of methods for each prototype), one vector library for the family (§13), and a tree space with `parent` and `children` axes.
 - The owner decides these items, because they change other repositories or public names. The items are D9 (the name of the repository), D11 (the template fixes upstream) and D12 (the workspace `CLAUDE.md`). The shared Optional package and the first npm release are also decisions of the owner.
-- The research reports in `docs/research/` stay local. They contain local paths and the names of private repositories. The links to them in this document work only in a local copy.
+- The research reports in `docs/research/` are in the repository, without local paths and without details of private repositories. The lineage report (03) is mostly about private repositories, so it stays local, and its links in this document work only in a local copy.
 
 ---
 

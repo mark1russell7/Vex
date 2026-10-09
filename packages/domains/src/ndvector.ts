@@ -30,7 +30,7 @@ export class NDVector<K extends string = string> {
   }
   /** The value of a component, or 0 if the vector does not have it. */
   get(k: string): number {
-    return Object.hasOwn(this.c, k) ? (this.c as Readonly<Record<string, number>>)[k] ?? 0 : 0;
+    return Object.hasOwn(this.c, k) ? Number((this.c as Readonly<Record<string, number>>)[k]) : 0;
   }
   set<K2 extends string>(k: K2, v: number): NDVector<K | K2> {
     return new NDVector({ ...this.c, [k]: v } as Record<K | K2, number>);

@@ -36,8 +36,9 @@ function lawProperty<Ts extends [unknown, ...unknown[]]>(name: string, property:
   return {
     name,
     check: (numRuns: number): LawResult => {
-      const details = fc.check(property, { numRuns });
-      return details.failed ? { name, ok: false, message: fc.defaultReportMessage(details) ?? "failed" } : { name, ok: true };
+      // fast-check gives a report message only for a failed run.
+      const message = fc.defaultReportMessage(fc.check(property, { numRuns }));
+      return message === undefined ? { name, ok: true } : { name, ok: false, message };
     },
   };
 }
@@ -96,5 +97,5 @@ export function checkLaws<D>(domain: AnyDomain, opts: LawOptions<D>): readonly L
 /** This function checks each declared law of `domain`, and throws an error that lists the failed laws. */
 export function assertLaws<D>(domain: AnyDomain, opts: LawOptions<D>): void {
   const failed = checkLaws(domain, opts).filter((r) => !r.ok);
-  if (failed.length > 0) throw new Error(failed.map((r) => `${r.name}: ${r.message ?? ""}`).join("\n\n"));
+  if (failed.length > 0) throw new Error(failed.map((r) => [r.name, r.message].join(": ")).join("\n\n"));
 }

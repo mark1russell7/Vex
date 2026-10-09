@@ -128,9 +128,9 @@ export function arbExpr(opts: ArbOptions): fc.Arbitrary<Expr> {
       ),
       fc.constantFrom(...NAMES, "c").map((name): Expr => ({ tag: "var", name })),
       fc.tuple(fc.constantFrom(...ops), fc.array(tie("expr"), { maxLength: 3 })).map(([op, args]): Expr => ({ tag: "app", op, args })),
-      fc.tuple(fc.subarray([...NAMES], { minLength: 1 }), fc.array(tie("expr"), { minLength: 2, maxLength: 2 }), tie("expr")).map(([names, binds, body]): Expr => ({
+      fc.tuple(fc.subarray([...NAMES], { minLength: 1 }), tie("expr"), tie("expr"), tie("expr")).map(([names, first, second, body]): Expr => ({
         tag: "let",
-        bind: Object.fromEntries(names.map((n, i) => [n, binds[i] ?? { tag: "lit", value: 0 }])),
+        bind: Object.fromEntries(names.map((n, i) => [n, i === 0 ? first : second])),
         body,
       })),
       fc.tuple(tie("expr"), tie("expr")).map(([x, y]): Expr => ({ tag: "rec", fields: { x, y } })),

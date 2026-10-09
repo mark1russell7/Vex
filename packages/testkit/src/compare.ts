@@ -12,10 +12,6 @@ const plain = (u: unknown): unknown => {
     return u.items.map((it) => ({ key: it.key, ...(it.result.ok ? { ok: true, value: plain(it.result.value) } : { ok: false, code: it.result.error.code }) }));
   }
   if (Array.isArray(u)) return u.map(plain);
-  if (typeof u === "object" && u !== null && (u as { kind?: unknown }).kind === "vex.list") {
-    const items = (u as { items: readonly { key: string; result: { ok: boolean; value?: unknown; error?: { code: string } } }[] }).items;
-    return items.map((it) => ({ key: it.key, ...(it.result.ok ? { ok: true, value: plain(it.result.value) } : { ok: false, code: it.result.error?.code }) }));
-  }
   if (typeof u === "object" && u !== null && "code" in u && "kind" in u && "message" in u) return { code: (u as { code: unknown }).code };
   if (typeof u === "object" && u !== null) {
     const proto: unknown = Object.getPrototypeOf(u);

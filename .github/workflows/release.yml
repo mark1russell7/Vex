@@ -1,7 +1,9 @@
 name: Release
 
-# Changesets: this workflow opens a pull request with the new versions and change logs. After a merge of that
-# pull request, the next start publishes the packages to npm with provenance.
+# Changesets: when changesets wait, this workflow opens a pull request with the new versions and change logs. When
+# no changeset waits, it publishes each package version that is not on npm, with provenance.
+# The pull request needs the setting "Allow GitHub Actions to create and approve pull requests". Without it, start
+# `pnpm changeset version` locally, commit the result, and then start this workflow to publish.
 #
 # The owner starts it by hand. The job runs in the GitHub environment "npm", so the owner approves each run.
 # npm trusts this workflow for each package (trusted publishing with OIDC, so there is no token):
@@ -39,11 +41,12 @@ jobs:
       - run: pnpm check
       - run: pnpm check:packages
       - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        # Version 2 of the action: the inputs have the suffix -script, and the token is the default github-token.
+        # pnpm 12 publishes natively: it exchanges the OIDC token of the job with npm, and it signs the provenance.
         with:
-          version: pnpm exec changeset version
-          publish: pnpm exec changeset publish
-          title: Version the packages
-          commit: Version the packages
+          version-script: pnpm exec changeset version
+          publish-script: pnpm exec changeset publish
+          pr-title: Version the packages
+          commit-message: Version the packages
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"

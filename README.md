@@ -41,7 +41,7 @@ separated.explain("A"); // a trace of each step
 
 ## Status
 
-Version 0.2 is on npm. The specification (Vex 1.0) is in [`spec/README.md`](./spec/README.md), and the plan is in [`docs/REVIEW.md`](./docs/REVIEW.md). The code before the rebuild is in the git history (package `@vex/legacy`, removed after the parity tests passed).
+The packages are on npm (see the badge for the version). The specification (Vex 1.0) is in [`spec/README.md`](./spec/README.md), and the plan is in [`docs/REVIEW.md`](./docs/REVIEW.md). The code before the rebuild is in the git history (package `@vex/legacy`, removed after the parity tests passed).
 
 | Package | Contents |
 |---|---|

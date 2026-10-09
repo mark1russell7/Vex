@@ -1,5 +1,15 @@
 # @mark1russell7/vex-domains
 
+## 0.3.0
+
+### Patch Changes
+
+- cb86b41: Add a README to each package (an example that a test checks, the features and the links), and the keywords, homepage, bugs and author fields.
+- 07e271e: Add typed free functions: `vex(...).withOptions({ fns })` keeps the types of the functions, and `chain.call(name, ...args)` applies one with typed arguments and a typed result. Add `sheet().declare<T>()`, so a column can read itself or a later column with its type. `NDVector.get` and the test kit have small clean-ups, and every published package has a coverage gate.
+- Updated dependencies [cb86b41]
+- Updated dependencies [07e271e]
+  - @mark1russell7/vex@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

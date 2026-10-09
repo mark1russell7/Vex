@@ -1,4 +1,4 @@
-# Builds packages/site and publishes it to GitHub Pages at https://mark1russell7.github.io/Vex/.
+# Builds packages/site and publishes it to GitHub Pages at https://mark1russell7.github.io/vex/.
 # The Pages source of the repository is "GitHub Actions" (Settings > Pages).
 name: Pages
 

@@ -836,7 +836,7 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 | P1 Kernel | Done | Commit `0357f95` |
 | P2 Surface | Done | Commits `749a3e1` and `1c9a17a`. `@vex/legacy` is gone. |
 | P3 Assurance | Done, with the changes of §14.2 | Commits `7e76f54`, `84234e8`, `b815206` and `26d9b7f`. The mutation score is 90.7 %. |
-| P4 Site | Done | Commits `89161c6`, `a1c7cfe` and `643aaa8`. The site is live at [mark1russell7.github.io/Vex](https://mark1russell7.github.io/Vex/). |
+| P4 Site | Done | Commits `89161c6`, `a1c7cfe` and `643aaa8`. The site is live at [mark1russell7.github.io/vex](https://mark1russell7.github.io/vex/). |
 | P5 Interop | Done, except the items of the owner (§14.4) | Commits `b815206` (build, release), `d3be6d7` (sheets, pilot) and `6eff59c` (`compile`) |
 
 ### 14.2 Changes to the plan

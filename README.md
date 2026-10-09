@@ -4,6 +4,15 @@
 
 Vex is a TypeScript library for typed spreadsheet formulas over domain objects.
 
+<p align="center">
+  <a href="https://mark1russell7.github.io/vex/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.gif">
+      <img src="docs/assets/hero-light.gif" width="640" alt="Boxes drift on graph paper. Two Vex programs evaluate at each box in each frame: an arrow goes to the nearest box, and a red edge marks an overlap.">
+    </picture>
+  </a>
+</p>
+
 **[The site](https://mark1russell7.github.io/vex/)** has a tour, live examples, the Lab and the specification with the test status of each rule.
 
 ```sh

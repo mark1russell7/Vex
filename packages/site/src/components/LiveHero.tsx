@@ -154,7 +154,9 @@ export default function LiveHero(): ReactElement {
     if (!playing || !visible) return;
     let raf = 0;
     let last = performance.now();
-    const tick = (now: number): void => {
+    // The time comes from performance.now(), the same clock as "last", and not from the argument of the callback.
+    const tick = (): void => {
+      const now = performance.now();
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       setMovers((m) => step(m, dt));

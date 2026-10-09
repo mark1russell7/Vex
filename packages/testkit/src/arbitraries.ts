@@ -56,7 +56,27 @@ export const arbRecord = (domainValue: fc.Arbitrary<unknown>): fc.Arbitrary<unkn
     { weight: 1, arbitrary: fc.constant(0).map(throwingRecord) },
   );
 
-/** A record, array or grid space. */
+/** The input of a tree space: the records by key, and the parent of each key (`null` for a root). */
+export interface TreeInput {
+  readonly records: Readonly<Record<string, unknown>>;
+  readonly parents: Readonly<Record<string, string | null>>;
+}
+
+/** The input of a tree space with up to 6 keys. The parent of a key is `null` or a key before it, so there is no cycle. */
+export const arbTreeInput = (domainValue: fc.Arbitrary<unknown>): fc.Arbitrary<TreeInput> =>
+  fc.uniqueArray(fc.constantFrom("A", "B", "C", "D", "E", "F"), { minLength: 1, maxLength: 6 }).chain((keys) =>
+    fc
+      .tuple(
+        fc.tuple(...keys.map(() => arbRecord(domainValue))),
+        fc.tuple(...keys.map((_, i) => (i === 0 ? fc.constant(null) : fc.option(fc.constantFrom(...keys.slice(0, i)), { nil: null })))),
+      )
+      .map(([recs, ps]) => ({
+        records: Object.fromEntries(keys.map((k, i) => [k, recs[i]])),
+        parents: Object.fromEntries(keys.map((k, i) => [k, ps[i] ?? null])),
+      })),
+  );
+
+/** A record, array, grid or tree space. */
 export const arbSpace = (domainValue: fc.Arbitrary<unknown>): fc.Arbitrary<Space> =>
   fc.oneof(
     { weight: 4, arbitrary: fc.uniqueArray(fc.constantFrom(...RECORD_KEYS), { minLength: 1, maxLength: 4 }).chain((keys) =>
@@ -66,6 +86,7 @@ export const arbSpace = (domainValue: fc.Arbitrary<unknown>): fc.Arbitrary<Space
     { weight: 1, arbitrary: fc.integer({ min: 1, max: 3 }).chain((rows) =>
       fc.array(fc.array(arbRecord(domainValue), { minLength: 1, maxLength: 3 }), { minLength: rows, maxLength: rows }).map((g) => space.grid(g) as Space),
     ) },
+    { weight: 1, arbitrary: arbTreeInput(domainValue).map((t) => space.tree(t.records, t.parents)) },
   );
 
 /** A move of an address. */
@@ -74,6 +95,7 @@ export const arbMove: fc.Arbitrary<Move> = fc.oneof(
   fc.integer({ min: -1, max: 4 }).map((i): Move => ({ t: "index", i })),
   fc.constant<Move>({ t: "other" }),
   fc.constant<Move>({ t: "origin" }),
+  fc.constant<Move>({ t: "parent" }),
   fc.oneof(fc.tuple(fc.integer({ min: -1, max: 1 })), fc.tuple(fc.integer({ min: -1, max: 1 }), fc.integer({ min: -1, max: 1 }))).map((d): Move => ({ t: "offset", d })),
 );
 
@@ -116,7 +138,17 @@ export function arbExpr(opts: ArbOptions): fc.Arbitrary<Expr> {
     ),
     axis: fc.oneof(
       { depthSize: "small", maxDepth: 2 },
-      fc.constantFrom<Axis>({ t: "all" }, { t: "others" }, { t: "other" }, { t: "neighbors", n: 4 }, { t: "neighbors", n: 8 }),
+      fc.constantFrom<Axis>(
+        { t: "all" },
+        { t: "others" },
+        { t: "other" },
+        { t: "neighbors", n: 4 },
+        { t: "neighbors", n: 8 },
+        { t: "children" },
+        { t: "ancestors" },
+        { t: "descendants" },
+        { t: "siblings" },
+      ),
       fc.tuple(tie("axis"), tie("expr")).map(([axis, test]): Axis => ({ t: "where", axis, test })),
     ),
   }));

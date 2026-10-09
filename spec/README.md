@@ -23,6 +23,7 @@ A Vex program is an expression. It evaluates at one key of a space. The key wher
 - A record space has the property names of an object as keys, in their order.
 - An array space has the keys `"0"`, `"1"` and so on.
 - A grid space has the key `"row,column"` for each cell. A row can be shorter than the others.
+- **[SPACE.TREE]** A tree space has records by key, and a parent for each key that is not a root. A parent that is not a key, or a cycle of parents, makes the constructor throw. The children of a key are in key order.
 - A space copies its input. A later change to the input does not change the space.
 
 ## 3. Addresses
@@ -34,6 +35,7 @@ A move changes the key where a reference reads.
 - **[NAV.OTHER.PAIR]** The move `other` goes to the other key of a space with two keys. In a space with a different number of keys, it gives `#REF!`.
 - **[NAV.OFFSET]** The move `offset(d)` adds `d` to the position of the focus: one number in an array space, two numbers in a grid space. A position outside the space, or an offset in a record space, gives `#REF!`.
 - **[NAV.ORIGIN]** The move `origin` goes back to the origin of the evaluation.
+- **[NAV.PARENT]** The move `parent` goes to the parent of the focus in a tree space. A root gives `#REF!`, and a space that is not a tree gives `#REF!`.
 - **[NAV.SEQUENCE]** The moves of an address apply in order. If one move fails, the address fails. Vex does not simplify addresses, because a simplification could hide a failure.
 
 ## 4. Expressions
@@ -99,6 +101,7 @@ An expression is plain JSON data. It has one of these kinds.
 - **[AXIS.OTHERS.ORIGIN]** Inside an axis, the focus is the target, and the origin does not change. A value bound outside the axis keeps its value. Thus a base value from the origin and a field of the target can meet in one body.
 - **[AXIS.OTHER.PAIR]** The axis `other` has the other key of a pair as a target. Outside a pair, it gives `#REF!`.
 - **[AXIS.NEIGHBORS]** The axis `neighbors(4)` or `neighbors(8)` has the neighbor cells of the focus in a grid as targets. Outside a grid, it gives `#REF!`.
+- **[AXIS.TREE]** In a tree space, the axis `children` has the children of the focus as targets, in key order. `ancestors` has the parent first and the root last. `descendants` has each key under the focus, depth first, with each parent before its children. `siblings` has the other children of the parent, or the other roots for a root. In a space that is not a tree, each of these axes gives `#REF!`.
 - **[AXIS.WHERE]** The axis `where(axis, test)` keeps the targets of `axis` where `test` gives `true`. A test that fails, or that does not give a boolean, gives an error item for that target.
 - **[AXIS.OTHERS-UNION]** The targets of `others` and the focus are the targets of `all`.
 - **[AXIS.OTHER-TWICE]** In a pair, the address `[other, other]` points to the focus.
@@ -154,3 +157,4 @@ A sheet has named columns of formulas over a space. A cell is one column at one 
 - **[EXAMPLE.SEPARATION]** The test is `position + size - other.position` in a pair of boxes. A component that is not positive shows that the box at the origin ends before the other box starts.
 - **[EXAMPLE.NEAREST]** The minimum of the distances from the origin to the others is the distance to the nearest other record.
 - **[EXAMPLE.OFFSETS]** The reduction with `add` of the offsets from the origin to the others is the sum of the offsets.
+- **[EXAMPLE.TREE]** In a tree of people, the salary of a person plus the sum over `descendants` is the cost of the team of that person. The `count` over `ancestors` is the depth of the person.

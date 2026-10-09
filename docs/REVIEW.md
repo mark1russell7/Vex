@@ -868,8 +868,15 @@ Option A gives more of what Vex needs (search, code, API reference) with less cu
 - §13 done: the site publishes `llms.txt` and the JSON Schema of the IR. A property test keeps the schema equal to `isExpr`.
 - §9.2 done: each workflow uses actions by commit SHA. `.github/renovate.json` keeps the pins current, after the owner installs the Renovate app.
 - The packed layout of Graph is an ordered fold. It is not a good fit for Vex formulas.
-- Later work: faster op lookup (a cache of methods for each prototype), one vector library for the family (§13), and a tree space with `parent` and `children` axes.
-- The owner decides these items, because they change other repositories or public names. The items are D9 (the name of the repository), D11 (the template fixes upstream) and D12 (the workspace `CLAUDE.md`). The shared Optional package and the first npm release are also decisions of the owner.
+- §13 done: the tree space, with the move `parent` and the axes `children`, `ancestors`, `descendants` and `siblings` (spec SPACE.TREE, NAV.PARENT, AXIS.TREE and EXAMPLE.TREE, property P11). The site has a tree explorer.
+- Not done, on purpose: a cache of methods for each prototype. A prototype can change after the first lookup, and then a cache gives an old method. The gain was 11 % of the time of a call.
+- Not done: one vector library for the family. render and Graph keep their own vector code until `@mark1russell7/vex-domains` is on npm. A change of Graph is a decision of its owner.
+- D5 done: the shared Optional is the new repository [`optional`](https://github.com/mark1russell7/optional). render gives its exports from `@render/optional`, and the type `Optional` of Vex is its type. Graph keeps its sentinel form, and the package has converters for it.
+- D8 done: the published names are `@mark1russell7/vex`, `@mark1russell7/vex-domains` and `@mark1russell7/vex-testkit`, and the packages are not private. The first release waits for an npm login of the owner.
+- D11 done: cue (`9c99ad6`) sets `types` in the node preset and removes `diagnostics`. The template (`aac1840`) makes source packages with a `tsconfig.test.json`, and anchors the Python block of `.gitignore`.
+- D12 done: the workspace `CLAUDE.md` tells which scaffolding rule applies in `client` and which in a template monorepo.
+- D9 waits for the owner: the rename of the repository needs a permission that the agent does not have. The branch `rename-vex` has the changes of the URLs for after the rename.
+- §13 done: the local Node is 24 (LTS). Jqy's `dump:src` works, and lag does not track `.claude/settings.local.json`. render's `roadmap` branch was already in `main`.
 - The research reports in `docs/research/` are in the repository, without local paths and without details of private repositories. The lineage report (03) is mostly about private repositories, so it stays local, and its links in this document work only in a local copy.
 
 ---

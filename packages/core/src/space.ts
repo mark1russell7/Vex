@@ -3,7 +3,7 @@ import type { Addr, Axis, Move } from "./ir.ts";
 import { fail, ok, type Result } from "./result.ts";
 
 /** The kind of a space. The kind sets which moves and axes are valid. */
-export type SpaceKind = "record" | "array" | "grid";
+export type SpaceKind = "record" | "array" | "grid" | "tree";
 
 /**
  * A space: an immutable collection of records with keys. A Vex program evaluates at one key of a space.
@@ -21,6 +21,10 @@ export interface Space<K extends string = string, O = unknown> {
   coords(k: string): readonly number[] | undefined;
   /** The key at a position, or `undefined`. */
   keyAt(coords: readonly number[]): K | undefined;
+  /** The parent of the key `k` in a tree space, or `undefined` for a root. Other spaces do not have it. */
+  parentOf?(k: string): K | undefined;
+  /** The children of the key `k` in a tree space, in key order. Other spaces do not have it. */
+  childrenOf?(k: string): readonly K[];
 }
 
 /** The key type of a grid space. */
@@ -108,6 +112,64 @@ class GridSpace<O> implements Space<GridKey, O> {
   }
 }
 
+class TreeSpace<K extends string, O> implements Space<K, O> {
+  readonly kind: SpaceKind = "tree";
+  readonly keys: readonly K[];
+  readonly #records: ReadonlyMap<string, O>;
+  readonly #parents: ReadonlyMap<string, K>;
+  readonly #children: ReadonlyMap<string, readonly K[]>;
+
+  constructor(records: Readonly<Record<K, O>>, parents: Readonly<Partial<Record<K, K | null>>>) {
+    const entries = Object.entries(records) as [K, O][];
+    this.keys = Object.freeze(entries.map(([k]) => k));
+    this.#records = new Map(entries);
+    const parentOf = new Map<string, K>();
+    for (const [k, p] of Object.entries(parents) as [K, K | null | undefined][]) {
+      if (!this.#records.has(k)) throw new TypeError(`the tree has no key "${k}", but the parents name it`);
+      if (p === null || p === undefined) continue;
+      if (!this.#records.has(p)) throw new TypeError(`the parent "${p}" of "${k}" is not a key of the tree`);
+      parentOf.set(k, p);
+    }
+    // A parent chain that comes back to a key of the same walk is a cycle, not a tree. Each key is in one walk
+    // only: a walk stops at a key that an earlier walk proved to reach a root. Thus the check is linear.
+    const reachesRoot = new Set<string>();
+    for (const k of this.keys) {
+      const walk = new Set<string>();
+      for (let p: string | undefined = k; p !== undefined && !reachesRoot.has(p); p = parentOf.get(p)) {
+        if (walk.has(p)) throw new TypeError(`the parents of "${k}" make a cycle, so the space is not a tree`);
+        walk.add(p);
+      }
+      for (const w of walk) reachesRoot.add(w);
+    }
+    this.#parents = parentOf;
+    const children = new Map<string, K[]>(this.keys.map((k) => [k, []]));
+    for (const k of this.keys) {
+      const p = parentOf.get(k);
+      if (p !== undefined) children.get(p)?.push(k);
+    }
+    this.#children = new Map([...children].map(([k, c]) => [k, Object.freeze(c)]));
+  }
+
+  has(k: string): k is K {
+    return this.#records.has(k);
+  }
+  get(k: string): O | undefined {
+    return this.#records.get(k);
+  }
+  coords(): readonly number[] | undefined {
+    return undefined;
+  }
+  keyAt(): K | undefined {
+    return undefined;
+  }
+  parentOf(k: string): K | undefined {
+    return this.#parents.get(k);
+  }
+  childrenOf(k: string): readonly K[] {
+    return this.#children.get(k) ?? [];
+  }
+}
+
 /** The constructors of spaces. */
 export const space = {
   /** This function makes a space from the entries of an object. The keys are the property names. */
@@ -122,6 +184,13 @@ export const space = {
   grid<O>(rows: readonly (readonly O[])[]): Space<GridKey, O> {
     return new GridSpace(rows);
   },
+  /**
+   * This function makes a tree space: the records by key, and the parent of each key. A key without a parent, or
+   * with the parent `null`, is a root. A parent that is not a key, or a cycle of parents, throws a `TypeError`.
+   */
+  tree<const R extends Readonly<Record<string, unknown>>>(records: R, parents: Readonly<Partial<Record<keyof R & string, (keyof R & string) | null>>>): Space<keyof R & string, R[keyof R]> {
+    return new TreeSpace<keyof R & string, R[keyof R]>(records, parents);
+  },
 } as const;
 
 /** The position of an evaluation: the key where it started, and the key where relative references read. */
@@ -132,7 +201,7 @@ export interface Position {
 
 /** This function applies one move to the focus. It gives the new focus, or a `#REF!` error. */
 export function applyMove(s: Space, at: Position, m: Move): Result<string> {
-  const refError = (kind: "unknown-key" | "not-a-pair" | "out-of-bounds" | "no-offset", message: string): Result<string> =>
+  const refError = (kind: "unknown-key" | "not-a-pair" | "out-of-bounds" | "no-offset" | "no-tree", message: string): Result<string> =>
     fail(vexError(kind, message, { origin: at.origin, focus: at.focus }));
   switch (m.t) {
     case "key":
@@ -161,6 +230,11 @@ export function applyMove(s: Space, at: Position, m: Move): Result<string> {
     }
     case "origin":
       return ok(at.origin);
+    case "parent": {
+      if (s.parentOf === undefined) return refError("no-tree", `"parent" needs a tree space, but this space is a ${s.kind}`);
+      const p = s.parentOf(at.focus);
+      return p === undefined ? refError("out-of-bounds", `the key "${at.focus}" is a root, so it has no parent`) : ok(p);
+    }
   }
 }
 
@@ -179,6 +253,41 @@ const NEIGHBORS_4: readonly (readonly [number, number])[] = [[-1, 0], [0, -1], [
 const NEIGHBORS_8: readonly (readonly [number, number])[] = [
   [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1],
 ];
+
+/** The axes of a tree space. */
+type TreeAxis = "children" | "ancestors" | "descendants" | "siblings";
+
+function treeTargets(s: Space, at: Position, t: TreeAxis): Result<readonly string[]> {
+  const parentOf = s.parentOf?.bind(s);
+  const childrenOf = s.childrenOf?.bind(s);
+  if (parentOf === undefined || childrenOf === undefined) {
+    return fail(vexError("no-tree", `"${t}" needs a tree space, but this space is a ${s.kind}`, at));
+  }
+  switch (t) {
+    case "children":
+      return ok(childrenOf(at.focus));
+    case "ancestors": {
+      const out: string[] = [];
+      for (let p = parentOf(at.focus); p !== undefined; p = parentOf(p)) out.push(p);
+      return ok(out);
+    }
+    case "descendants": {
+      // A depth-first walk with a stack, so a deep tree does not need a deep call stack.
+      const out: string[] = [];
+      const stack = childrenOf(at.focus).toReversed();
+      for (let k = stack.pop(); k !== undefined; k = stack.pop()) {
+        out.push(k);
+        stack.push(...childrenOf(k).toReversed());
+      }
+      return ok(out);
+    }
+    case "siblings": {
+      const p = parentOf(at.focus);
+      const group = p === undefined ? s.keys.filter((k) => parentOf(k) === undefined) : childrenOf(p);
+      return ok(group.filter((k) => k !== at.focus));
+    }
+  }
+}
 
 /**
  * This function gives the targets of a base axis at a focus. It does not handle `where`, because the
@@ -204,5 +313,10 @@ export function axisTargets(s: Space, at: Position, a: Exclude<Axis, { readonly 
         }),
       );
     }
+    case "children":
+    case "ancestors":
+    case "descendants":
+    case "siblings":
+      return treeTargets(s, at, a.t);
   }
 }

@@ -4,7 +4,7 @@
  */
 import type { AnyDomain, Domain, OpSpec } from "./domain.ts";
 import { evaluate, explain, type EvalOptions, type ExtHandler, type FreeFn } from "./evaluate.ts";
-import { app, each, ext, index as indexMove, key as keyMove, let_, lit, offset as offsetMove, other as otherMove, origin as originMove, rec, ref, toPath, v, type Addr, type Axis, type Expr, type Move } from "./ir.ts";
+import { app, each, ext, index as indexMove, key as keyMove, let_, lit, offset as offsetMove, other as otherMove, origin as originMove, parent as parentMove, rec, ref, toPath, v, type Addr, type Axis, type Expr, type Move } from "./ir.ts";
 import { cell as cellRef, SheetRun } from "./sheet.ts";
 import { toOptional, type Optional, type Result } from "./result.ts";
 import type { Space } from "./space.ts";
@@ -153,6 +153,8 @@ export interface ChainBase<Ctx extends ChainContext, T> {
   offset(...d: readonly number[]): ChainOf<Ctx, T>;
   /** Navigation: later field references read at the origin again. */
   origin(): ChainOf<Ctx, T>;
+  /** Navigation: later field references read at the parent of the focus, in a tree space. A root gives `#REF!`. */
+  parent(): ChainOf<Ctx, T>;
   /** This method uses `fallback` when the chain gives an error. */
   ifError<U>(fallback: ArgInput<U, Ctx, false> | T): ChainOf<Ctx, T | U>;
   /** This method evaluates each branch with the current value, and gives a record of the results. */
@@ -168,6 +170,14 @@ export interface ChainBase<Ctx extends ChainContext, T> {
   neighbors<U>(n: 4 | 8, body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
   /** The all axis inside the expression: the body evaluates at each key, with the current value as start value. */
   each<U>(body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
+  /** The children axis of a tree space: the body evaluates at each child of the focus. */
+  children<U>(body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
+  /** The ancestors axis of a tree space: the parent first, the root last. */
+  ancestors<U>(body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
+  /** The descendants axis of a tree space: depth first, each parent before its children. */
+  descendants<U>(body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
+  /** The siblings axis of a tree space: the other children of the parent, or the other roots for a root. */
+  siblings<U>(body: (c: ChainOf<Ctx, T>) => ChainBase<Ctx, U>, opts?: AxisOpts<Ctx, T>): ListChain<Ctx, U>;
 }
 
 /** The options of an axis. */
@@ -414,6 +424,9 @@ class ChainImpl {
   origin(): ChainImpl {
     return this.#move(originMove);
   }
+  parent(): ChainImpl {
+    return this.#move(parentMove);
+  }
 
   ifError(fallback: unknown): ChainImpl {
     return new ChainImpl({ ...this.#s, expr: app("ifError", this.#s.expr, toExpr(fallback, this.#s.addr)) });
@@ -461,6 +474,18 @@ class ChainImpl {
   }
   each(body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
     return this.#axis({ t: "all" }, body, opts);
+  }
+  children(body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    return this.#axis({ t: "children" }, body, opts);
+  }
+  ancestors(body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    return this.#axis({ t: "ancestors" }, body, opts);
+  }
+  descendants(body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    return this.#axis({ t: "descendants" }, body, opts);
+  }
+  siblings(body: (c: ChainImpl) => { readonly program: Expr }, opts?: { readonly where?: (c: ChainImpl) => { readonly program: Expr } }): ListChainImpl {
+    return this.#axis({ t: "siblings" }, body, opts);
   }
 }
 

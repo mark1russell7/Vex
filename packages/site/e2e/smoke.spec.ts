@@ -118,3 +118,16 @@ test("the site serves the JSON Schema of the IR and llms.txt", async ({ page }) 
   expect(llms.ok()).toBe(true);
   expect(await llms.text()).toContain("ir.schema.json");
 });
+
+test("the tree explorer gives the targets of each tree axis", async ({ page }) => {
+  await page.goto("./learn/axes/");
+  const explorer = page.getByRole("region", { name: "The tree explorer" });
+  await hydrated(explorer);
+  await expect(explorer.getByTestId("tree-targets")).toHaveText("descendants of Bo: Cy, Di, Fa");
+  await expect(explorer.getByTestId("tree-cost")).toContainText("530");
+  await explorer.getByRole("button", { name: "ancestors" }).click();
+  await explorer.getByRole("button", { name: "Di, Developer" }).click();
+  await expect(explorer.getByTestId("tree-targets")).toHaveText("ancestors of Di: Bo, Ada");
+  await explorer.getByRole("button", { name: "siblings" }).click();
+  await expect(explorer.getByTestId("tree-targets")).toHaveText("siblings of Di: Cy, Fa");
+});

@@ -28,8 +28,8 @@ describe("the JSON Schema of the IR (IR.JSON)", () => {
     const broken = fc.oneof(
       fc.jsonValue(),
       fc.record({ tag: fc.constantFrom("lit", "ref", "app", "let", "var", "rec", "each", "ext", "loop"), path: fc.jsonValue(), args: fc.jsonValue(), name: fc.jsonValue() }),
-      fc.record({ tag: fc.constant("each"), axis: fc.record({ t: fc.constantFrom("all", "neighbors", "where", "up"), n: fc.integer({ min: 3, max: 9 }) }), body: fc.constant({ tag: "lit", value: 1 }) }),
-      fc.record({ tag: fc.constant("ref"), path: fc.array(fc.string()), at: fc.array(fc.record({ t: fc.constantFrom("key", "index", "other", "offset", "origin", "jump"), key: fc.jsonValue(), i: fc.double(), d: fc.jsonValue() })) }),
+      fc.record({ tag: fc.constant("each"), axis: fc.record({ t: fc.constantFrom("all", "neighbors", "where", "children", "ancestors", "descendants", "siblings", "up"), n: fc.integer({ min: 3, max: 9 }) }), body: fc.constant({ tag: "lit", value: 1 }) }),
+      fc.record({ tag: fc.constant("ref"), path: fc.array(fc.string()), at: fc.array(fc.record({ t: fc.constantFrom("key", "index", "other", "offset", "origin", "parent", "jump"), key: fc.jsonValue(), i: fc.double(), d: fc.jsonValue() })) }),
     );
     fc.assert(
       fc.property(broken, (u) => {

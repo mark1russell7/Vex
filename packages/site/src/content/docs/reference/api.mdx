@@ -50,8 +50,10 @@ nearest.at("A");      // => some(5)
 | `to(key)`, `index(i)`, `offset(...d)` | Moves the address of the later field references |
 | `other()` | Moves to the other key of a pair. The types offer it only for a space with two keys. |
 | `origin()` | Moves back to the origin |
+| `parent()` | Moves to the parent of the focus, in a tree space |
 | `others(body, { where })` | The others axis. The body starts with the current value, and its field names read at each target. |
 | `neighbors(n, body, { where })` | The neighbors axis of a grid. `n` is 4 or 8. |
+| `children`, `ancestors`, `descendants`, `siblings` (each with `(body, { where })`) | The axes of a tree space |
 | `each(body, { where })` | The all axis inside the expression |
 | `with(binds, body)` | Binds names. The body gets a typed argument for each name. |
 | `fork(branches)` | Evaluates each branch with the current value, and gives a record |
@@ -97,6 +99,7 @@ A cell on a cycle of cell references gives `#CYCLE!`. Refer to [sheets and cycle
 space.record({ A: a, B: b }); // keys "A" and "B"
 space.array([a, b, c]);       // keys "0", "1" and "2"
 space.grid([[a, b], [c, d]]); // keys "0,0", "0,1", "1,0" and "1,1"
+space.tree({ r: a, x: b, y: c }, { x: "r", y: "r" }); // keys "r", "x" and "y": x and y are the children of r
 ```
 
 A space copies its input. Nothing changes a space after it is made.
@@ -147,7 +150,7 @@ Under `isolatedDeclarations`, give a domain an explicit type. `OpTable<D, Names,
 
 ## The IR
 
-`lit`, `ref`, `app`, `let_`, `v`, `rec`, `each` and `ext` make expressions. `key`, `index`, `other`, `offset` and `origin` make moves. `axes.all`, `axes.others`, `axes.other`, `axes.neighbors(n)` and `axes.where(axis, test)` make axes. Refer to [the IR](../ir/).
+`lit`, `ref`, `app`, `let_`, `v`, `rec`, `each` and `ext` make expressions. `key`, `index`, `other`, `offset`, `origin` and `parent` make moves. `axes.all`, `axes.others`, `axes.other`, `axes.neighbors(n)`, `axes.children`, `axes.ancestors`, `axes.descendants`, `axes.siblings` and `axes.where(axis, test)` make axes. Refer to [the IR](../ir/).
 
 ## Results
 

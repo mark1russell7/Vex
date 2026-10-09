@@ -9,7 +9,8 @@ export type Move =
   | { readonly t: "index"; readonly i: number }
   | { readonly t: "other" }
   | { readonly t: "offset"; readonly d: readonly number[] }
-  | { readonly t: "origin" };
+  | { readonly t: "origin" }
+  | { readonly t: "parent" };
 
 /** An address: a list of moves. The empty list is the focus. */
 export type Addr = readonly Move[];
@@ -20,6 +21,10 @@ export type Axis =
   | { readonly t: "others" }
   | { readonly t: "other" }
   | { readonly t: "neighbors"; readonly n: 4 | 8 }
+  | { readonly t: "children" }
+  | { readonly t: "ancestors" }
+  | { readonly t: "descendants" }
+  | { readonly t: "siblings" }
   | { readonly t: "where"; readonly axis: Axis; readonly test: Expr };
 
 /** A Vex expression. */
@@ -84,6 +89,8 @@ export const other: Move = Object.freeze({ t: "other" });
 export const offset = (...d: readonly number[]): Move => ({ t: "offset", d });
 /** The move back to the origin of the evaluation. */
 export const origin: Move = Object.freeze({ t: "origin" });
+/** The move to the parent of the focus in a tree space. */
+export const parent: Move = Object.freeze({ t: "parent" });
 
 /** The axes. */
 export const axes = {
@@ -95,6 +102,14 @@ export const axes = {
   other: Object.freeze({ t: "other" }) as Axis,
   /** The neighbors of the focus in a grid. */
   neighbors: (n: 4 | 8 = 8): Axis => ({ t: "neighbors", n }),
+  /** The children of the focus in a tree, in key order. */
+  children: Object.freeze({ t: "children" }) as Axis,
+  /** The ancestors of the focus in a tree: the parent first, the root last. */
+  ancestors: Object.freeze({ t: "ancestors" }) as Axis,
+  /** The descendants of the focus in a tree, depth first, each parent before its children. */
+  descendants: Object.freeze({ t: "descendants" }) as Axis,
+  /** The other children of the parent of the focus. For a root, the other roots. */
+  siblings: Object.freeze({ t: "siblings" }) as Axis,
   /** The targets of `axis` where `test` gives `true`. */
   where: (axis: Axis, test: Expr): Axis => ({ t: "where", axis, test }),
 } as const;
@@ -117,6 +132,7 @@ export function isMove(u: unknown): u is Move {
       return Array.isArray(u["d"]) && u["d"].every((n) => typeof n === "number" && Number.isInteger(n));
     case "other":
     case "origin":
+    case "parent":
       return true;
     default:
       return false;
@@ -130,6 +146,10 @@ export function isAxis(u: unknown): u is Axis {
     case "all":
     case "others":
     case "other":
+    case "children":
+    case "ancestors":
+    case "descendants":
+    case "siblings":
       return true;
     case "neighbors":
       return u["n"] === 4 || u["n"] === 8;

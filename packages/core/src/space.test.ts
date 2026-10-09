@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { index, key, offset, origin, other } from "./ir.ts";
+import { axes, index, key, offset, origin, other, parent } from "./ir.ts";
 import { applyMove, axisTargets, resolveAddr, space } from "./space.ts";
 import { error, value } from "./test-support.ts";
 
@@ -114,5 +114,61 @@ describe("the edges of the spaces", () => {
   it("NAV.OTHER.PAIR: other goes both ways in a pair", () => {
     const pair = space.record({ A: 1, B: 2 });
     expect(value(applyMove(pair, { origin: "B", focus: "B" }, other))).toBe("A");
+  });
+});
+
+const here = (k: string): { readonly origin: string; readonly focus: string } => ({ origin: k, focus: k });
+
+describe("tree spaces (SPACE.TREE, NAV.PARENT, AXIS.TREE)", () => {
+  // root ─┬─ a ─┬─ a1
+  //       │     └─ a2
+  //       └─ b
+  // solo (a second root)
+  const t = space.tree({ root: 1, a: 2, a1: 3, a2: 4, b: 5, solo: 6 }, { a: "root", a1: "a", a2: "a", b: "root", root: null });
+  const targets = (k: string, axis: Parameters<typeof axisTargets>[2]) => value(axisTargets(t, here(k), axis));
+
+  it("SPACE.TREE: a tree space keeps the key order, and its parents and children", () => {
+    expect(t.kind).toBe("tree");
+    expect(t.keys).toEqual(["root", "a", "a1", "a2", "b", "solo"]);
+    expect(t.get("a1")).toBe(3);
+    expect(t.parentOf?.("a1")).toBe("a");
+    expect(t.parentOf?.("root")).toBeUndefined();
+    expect(t.childrenOf?.("root")).toEqual(["a", "b"]);
+    expect(t.childrenOf?.("zzz")).toEqual([]);
+    expect(t.coords("a")).toBeUndefined();
+    expect(t.keyAt([0])).toBeUndefined();
+  });
+
+  it("SPACE.TREE: a parent that is not a key, a key that is not in the tree, and a cycle throw", () => {
+    expect(() => space.tree({ a: 1 }, { a: "nope" as "a" })).toThrow(TypeError);
+    expect(() => space.tree({ a: 1 }, { zzz: "a" } as never)).toThrow(TypeError);
+    expect(() => space.tree({ a: 1, b: 2, c: 3 }, { a: "c", b: "a", c: "b" })).toThrow(/cycle/);
+    expect(() => space.tree({ a: 1 }, { a: "a" })).toThrow(/cycle/);
+  });
+
+  it("NAV.PARENT: parent goes to the parent, a root gives #REF!, and other spaces give #REF!", () => {
+    expect(value(applyMove(t, here("a2"), parent))).toBe("a");
+    expect(value(resolveAddr(t, here("a2"), [parent, parent]))).toBe("root");
+    expect(error(applyMove(t, here("root"), parent))).toMatchObject({ code: "#REF!", kind: "out-of-bounds" });
+    expect(error(applyMove(space.record({ A: 1 }), here("A"), parent))).toMatchObject({ code: "#REF!", kind: "no-tree" });
+  });
+
+  it("AXIS.TREE: children, ancestors, descendants and siblings", () => {
+    expect(targets("root", axes.children as never)).toEqual(["a", "b"]);
+    expect(targets("a2", axes.ancestors as never)).toEqual(["a", "root"]);
+    expect(targets("root", axes.ancestors as never)).toEqual([]);
+    expect(targets("root", axes.descendants as never)).toEqual(["a", "a1", "a2", "b"]);
+    expect(targets("a1", axes.siblings as never)).toEqual(["a2"]);
+    expect(targets("root", axes.siblings as never)).toEqual(["solo"]);
+    expect(targets("b", axes.descendants as never)).toEqual([]);
+    expect(error(axisTargets(space.record({ A: 1 }), here("A"), axes.children as never))).toMatchObject({ code: "#REF!", kind: "no-tree" });
+  });
+
+  it("AXIS.TREE: a deep tree does not need a deep call stack", () => {
+    const n = 20000;
+    const records = Object.fromEntries(Array.from({ length: n }, (_, i) => [`k${i}`, i]));
+    const parents = Object.fromEntries(Array.from({ length: n - 1 }, (_, i) => [`k${i + 1}`, `k${i}`]));
+    const deep = space.tree(records, parents);
+    expect(value(axisTargets(deep, here("k0"), axes.descendants as never))).toHaveLength(n - 1);
   });
 });

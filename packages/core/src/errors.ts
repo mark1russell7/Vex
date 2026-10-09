@@ -11,6 +11,7 @@ export type ErrorKind =
   | "out-of-bounds"
   | "no-offset"
   | "no-grid"
+  | "no-tree"
   | "missing-field"
   | "empty"
   | "not-instance"
@@ -31,6 +32,7 @@ const CODE_OF: Readonly<Record<ErrorKind, ErrorCode>> = {
   "out-of-bounds": "#REF!",
   "no-offset": "#REF!",
   "no-grid": "#REF!",
+  "no-tree": "#REF!",
   "missing-field": "#N/A",
   empty: "#N/A",
   "not-instance": "#VALUE!",

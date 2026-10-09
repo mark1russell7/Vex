@@ -57,6 +57,21 @@ result = #REF! no-offset: an offset of length 1 is not valid in a record space
 v @0 = #REF! out-of-bounds: the offset [-1] from "0" is outside the space
 result = #REF! out-of-bounds: the offset [-1] from "0" is outside the space
 
+## parent in a space that is not a tree
+#REF! no-tree: "parent" needs a tree space, but this space is a record | path [] | origin A | focus A
+position @A = #REF! no-tree: "parent" needs a tree space, but this space is a record
+result = #REF! no-tree: "parent" needs a tree space, but this space is a record
+
+## the parent of a root
+#REF! out-of-bounds: the key "top" is a root, so it has no parent | path [] | origin top | focus top
+name @top = #REF! out-of-bounds: the key "top" is a root, so it has no parent
+result = #REF! out-of-bounds: the key "top" is a root, so it has no parent
+
+## a tree axis in a space that is not a tree
+#REF! no-tree: "children" needs a tree space, but this space is a record | path [] | origin A | focus A
+each children @A = #REF! no-tree: "children" needs a tree space, but this space is a record
+result = #REF! no-tree: "children" needs a tree space, but this space is a record
+
 ## an unbound name
 #NAME? unbound: the name "nope" has no binding | path [] | origin A | focus A
 nope @A = #NAME? unbound: the name "nope" has no binding

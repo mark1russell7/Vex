@@ -1,8 +1,8 @@
-import { app, cell, compile, each, evaluate, explain, lit, parse, ref, serialize, SheetRun, space, vex, type Expr, type Space } from "@mark1russell7/vex";
+import { app, axisTargets, cell, compile, each, evaluate, explain, lit, parse, ref, resolveAddr, serialize, SheetRun, space, vex, type Expr, type Space } from "@mark1russell7/vex";
 import { BoolDomain, NumDomain, Vec2, Vec2Domain } from "@mark1russell7/vex-domains";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { arbExpr, arbOrigin, arbSpace, PATHS } from "./arbitraries.ts";
+import { arbExpr, arbOrigin, arbSpace, arbTreeInput, PATHS } from "./arbitraries.ts";
 import { fromCore, fromReference } from "./compare.ts";
 import { structuralEqual } from "./laws.ts";
 import { referenceEvaluate } from "./reference.ts";
@@ -176,6 +176,39 @@ describe("properties of sheets", () => {
         expect(cells.map(([c, k]) => fromCore(shuffled.cell(c, k)))).toEqual(expected);
         // A fresh run for each cell gives the same result too.
         expect(cells.map(([c, k]) => fromCore(new SheetRun(columns, { space: s, domains: DOMAINS }).cell(c, k)))).toEqual(expected);
+      }),
+    );
+  });
+});
+
+describe("properties of tree spaces", () => {
+  // The laws read only the parents of the input, not the tree space, so they check the space independently.
+  it("P11 AXIS.TREE: children, ancestors, descendants and siblings follow from the parents", () => {
+    fc.assert(
+      fc.property(arbTreeInput(fc.constant(0)), (input) => {
+        const s = space.tree(input.records, input.parents);
+        const keys = Object.keys(input.records);
+        const parentOf = (k: string): string | null => input.parents[k] ?? null;
+        const ancestorsOf = (k: string): string[] => {
+          const out: string[] = [];
+          for (let p = parentOf(k); p !== null; p = parentOf(p)) out.push(p);
+          return out;
+        };
+        const targets = (k: string, t: "children" | "ancestors" | "descendants" | "siblings"): readonly string[] => {
+          const r = axisTargets(s, { origin: k, focus: k }, { t });
+          return r.ok ? r.value : ["<error>"];
+        };
+        for (const k of keys) {
+          expect(targets(k, "children")).toEqual(keys.filter((x) => parentOf(x) === k));
+          expect(targets(k, "ancestors")).toEqual(ancestorsOf(k));
+          const descendants = targets(k, "descendants");
+          expect([...descendants].toSorted()).toEqual(keys.filter((x) => ancestorsOf(x).includes(k)).toSorted());
+          // Depth first: the parent of each descendant is the focus or comes before it.
+          descendants.forEach((d, i) => expect(parentOf(d) === k || descendants.slice(0, i).includes(parentOf(d) ?? "")).toBe(true));
+          expect(targets(k, "siblings")).toEqual(keys.filter((x) => x !== k && parentOf(x) === parentOf(k)));
+          const up = resolveAddr(s, { origin: k, focus: k }, [{ t: "parent" }]);
+          expect(up.ok ? up.value : null).toBe(parentOf(k));
+        }
       }),
     );
   });

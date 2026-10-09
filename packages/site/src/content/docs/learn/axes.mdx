@@ -6,6 +6,7 @@ description: An axis relates the focus to a list of targets. The base value come
 import { Aside } from "@astrojs/starlight/components";
 import AxesExplorer from "../../../components/AxesExplorer.tsx";
 import Stepper from "../../../components/Stepper.tsx";
+import TreeExplorer from "../../../components/TreeExplorer.tsx";
 
 An axis is a relation between the focus and a list of target keys. The body of the axis evaluates once at each target, and the result is a list. A reduction then makes one value from the list.
 
@@ -104,6 +105,43 @@ root.from("mass").others((e) => e.from("mass")).max({ strict: true }); // #N/A i
 <Aside type="tip">
 `reduce("add")` folds the list from the left with the op `add` of the domain. For an associative op, any order of reduction gives the same value. The law checker of `@mark1russell7/vex-testkit` tests each `associative` claim.
 </Aside>
+
+## Trees
+
+A tree space has a parent for each key that is not a root: `space.tree(records, parents)`. The move `parent()` reads at the parent, and four axes follow the relations of the tree:
+
+| Axis | Targets |
+|---|---|
+| `children` | the children of the focus, in key order |
+| `ancestors` | the parent first, the root last |
+| `descendants` | each key under the focus, depth first, with each parent before its children |
+| `siblings` | the other children of the parent, or the other roots for a root |
+
+The cost of a team is the salary of a person plus the salaries of the descendants. The depth of a person is the number of ancestors:
+
+```ts doctest
+const org = vex(NumDomain).over(space.tree(
+  {
+    ceo: { name: "Ada", salary: 300 },
+    cto: { name: "Bo", salary: 200 },
+    dev: { name: "Cy", salary: 100 },
+    cfo: { name: "Ed", salary: 190 },
+  },
+  { cto: "ceo", dev: "cto", cfo: "ceo" },
+));
+
+const team = org.from("salary")._.add(org.start(0).descendants((d) => d.from("salary")).sum());
+team.all().values();                                              // => [790, 300, 100, 190]
+org.start(0).ancestors((a) => a).count().at("dev");               // => some(2)
+org.start(0).parent().from("name").at("dev");                     // => some("Bo")
+org.start(0).siblings((s) => s.from("name")).values().at("cto");  // => some(["Ed"])
+```
+
+A root has no parent, so `parent()` at a root gives `#REF!`. In a space that is not a tree, `parent()` and the four axes give `#REF!`. Graph has a `$ancestor` reference for the same need.
+
+Select a person to move the origin, and select an axis:
+
+<TreeExplorer client:visible />
 
 ## The laws of the axes
 

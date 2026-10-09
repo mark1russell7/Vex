@@ -273,3 +273,39 @@ describe("the other members of the builder", () => {
     expect(untyped["half"]?.().result("A")).toEqual(ok(1));
   });
 });
+
+describe("tree spaces in the builder (EXAMPLE.TREE)", () => {
+  // ceo ─┬─ cto ─┬─ dev1
+  //      │       └─ dev2
+  //      └─ cfo
+  const people = space.tree(
+    {
+      ceo: { name: "Ada", salary: 300 },
+      cto: { name: "Bo", salary: 200 },
+      dev1: { name: "Cy", salary: 100 },
+      dev2: { name: "Di", salary: 110 },
+      cfo: { name: "Ed", salary: 190 },
+    },
+    { cto: "ceo", cfo: "ceo", dev1: "cto", dev2: "cto" },
+  );
+  const org = vex(Num).over(people);
+
+  it("EXAMPLE.TREE: the cost of each team, the depth of each person, and the name of the manager", () => {
+    const team = org.from("salary")._.plus(org.start(0).descendants((d) => d.from("salary")).sum());
+    expect(team.all().values()).toEqual([900, 410, 100, 110, 190]);
+    const depth = org.start(0).ancestors((a) => a).count();
+    expect(depth.all().values()).toEqual([0, 1, 2, 2, 1]);
+    const manager = org.start(0).parent().from("name");
+    expect(manager.all().values()).toEqual(["Ada", "Bo", "Bo", "Ada"]);
+    expect(error(manager.result("ceo")).code).toBe("#REF!");
+    expect(optionalValue(org.start(0).siblings((s) => s.from("salary")).sum().at("dev1"))).toBe(110);
+    expect(optionalValue(org.start(0).children((c) => c.from("name")).values().at("ceo"))).toEqual(["Bo", "Ed"]);
+  });
+
+  it("AXIS.TREE: a tree axis with where, and a tree axis in a space that is not a tree", () => {
+    const rich = org.start(0).descendants((d) => d.from("name"), { where: (d) => d.from("salary")._.gt(150) }).values();
+    expect(optionalValue(rich.at("ceo"))).toEqual(["Bo", "Ed"]);
+    const flat = vex(Num).over(space.record({ A, B }));
+    expect(error(flat.start(0).children((c) => c.from("weight")).count().result("A"))).toMatchObject({ code: "#REF!", kind: "no-tree" });
+  });
+});

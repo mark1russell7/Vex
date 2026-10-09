@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { defineDomain } from "./domain.ts";
 import type { VexError } from "./errors.ts";
 import { explain, formatTrace, type EvalOptions } from "./evaluate.ts";
-import { app, axes, each, ext, index, key, let_, lit, offset, other, rec, ref, v, type Expr } from "./ir.ts";
+import { app, axes, each, ext, index, key, let_, lit, offset, other, parent, rec, ref, v, type Expr } from "./ir.ts";
 import { fail, type Result } from "./result.ts";
 import { space } from "./space.ts";
 import { vexError } from "./errors.ts";
@@ -55,6 +55,7 @@ const s = space.record({
   N: null,
 });
 const row = space.array([{ v: 1 }, { v: 2 }]);
+const tree = space.tree({ top: { name: "t" }, leaf: { name: "l" } }, { leaf: "top" });
 
 interface Case {
   readonly name: string;
@@ -78,6 +79,9 @@ const CASES: readonly Case[] = [
   { name: "an index outside the keys", expr: ref("position", [index(9)]) },
   { name: "an offset in a record space", expr: ref("position", [offset(1)]) },
   { name: "an offset outside an array", expr: ref("v", [offset(-1)]), opts: { space: row, origin: "0" } },
+  { name: "parent in a space that is not a tree", expr: ref("position", [parent]) },
+  { name: "the parent of a root", expr: ref("name", [parent]), opts: { space: tree, origin: "top" } },
+  { name: "a tree axis in a space that is not a tree", expr: each(axes.children, ref("position")) },
   { name: "an unbound name", expr: v("nope") },
   { name: "a let binding that fails, and a var that reads it", expr: let_({ x: ref("mass") }, app("add", v("x"), ref("size"))) },
   { name: "an extension without a handler", expr: ext("sheet", null) },

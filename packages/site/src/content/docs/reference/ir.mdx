@@ -41,6 +41,7 @@ An address is a list of moves. The moves apply in order, from the focus.
 | `{ t: "other" }` | the other key of a space with two keys |
 | `{ t: "offset", d }` | a relative position in an array (one number) or a grid (two numbers) |
 | `{ t: "origin" }` | the origin of the evaluation |
+| `{ t: "parent" }` | the parent of the focus in a tree space |
 
 Vex does not simplify an address. For example, `[other, other]` in a space with three keys gives `#REF!`. A simplification to the empty address hides that error, so Vex keeps each move.
 
@@ -52,6 +53,7 @@ Vex does not simplify an address. For example, `[other, other]` in a space with 
 | `{ t: "others" }` | each key except the focus |
 | `{ t: "other" }` | the other key of a pair |
 | `{ t: "neighbors", n }` | the 4 or 8 neighbor cells of a grid |
+| `{ t: "children" }`, `{ t: "ancestors" }`, `{ t: "descendants" }`, `{ t: "siblings" }` | the relations of a tree space. Refer to [trees](../../learn/axes/#trees). |
 | `{ t: "where", axis, test }` | the targets of `axis` where `test` gives `true` |
 
 ## Programs are data

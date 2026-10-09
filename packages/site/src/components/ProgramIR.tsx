@@ -20,7 +20,7 @@ export default function ProgramIR(props: { readonly program: string }): ReactEle
         <span className="vx-muted">{json.length} characters of JSON</span>
       </header>
       <pre className="vx-code" style={{ borderTop: "none" }}>{p.code}</pre>
-      <pre className="vx-code" style={{ maxHeight: "24rem", overflow: "auto" }}>{json}</pre>
+      <pre className="vx-code" style={{ maxHeight: "24rem", overflow: "auto" }} tabIndex={0} role="region" aria-label="The program as JSON">{json}</pre>
     </section>
   );
 }

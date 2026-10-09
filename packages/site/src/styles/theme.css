@@ -110,6 +110,7 @@ header.header {
 }
 
 .vx-button[aria-pressed="true"],
+.vx-button[aria-selected="true"],
 .vx-button[data-variant="primary"] {
   border-color: var(--color-accent);
   background: var(--color-accent);
@@ -352,4 +353,10 @@ header.header {
   border-radius: var(--radius, 6px);
   overflow: hidden;
   background: var(--color-surface);
+}
+
+/* A scroll region takes the keyboard focus, so it shows a focus ring. */
+[role="region"][tabindex="0"]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }

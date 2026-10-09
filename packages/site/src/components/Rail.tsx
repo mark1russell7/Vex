@@ -54,7 +54,7 @@ export default function Rail(props: { readonly program?: string; readonly origin
           ))}
         </span>
       </header>
-      <div style={{ overflowX: "auto" }}>
+      <div style={{ overflowX: "auto" }} tabIndex={0} role="region" aria-label="The rail">
         <svg viewBox={`0 0 ${width} 170`} style={{ width: `${width}px`, maxWidth: "none", display: "block" }} role="img" aria-label={`The rail of ${events.length} nodes. ${final?.result.ok === false ? `The result is the error ${final.result.error.code}.` : "The result is a value."}`}>
           <line x1={10} y1={TOP} x2={width - 10} y2={TOP} stroke="var(--color-rule-strong)" strokeWidth={6} strokeLinecap="round" />
           <line x1={10} y1={BOTTOM} x2={width - 10} y2={BOTTOM} stroke="var(--color-mark-wash)" strokeWidth={6} strokeLinecap="round" />

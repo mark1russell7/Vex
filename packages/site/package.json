@@ -17,6 +17,7 @@
     "test:docs": "tsx scripts/doctest.ts && tsc -p tsconfig.doctest.json && vitest run -c vitest.doctest.config.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@mark1russell7/cue": "github:mark1russell7/cue",
     "@playwright/test": "^1.64.0",
     "@types/node": "^26.6.4",
@@ -36,8 +37,8 @@
     "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
     "@mark1russell7/vex": "workspace:*",
     "@mark1russell7/vex-domains": "workspace:*",
-    "@vex/pilots": "workspace:*",
     "@mark1russell7/vex-testkit": "workspace:*",
+    "@vex/pilots": "workspace:*",
     "astro": "^7.3.8",
     "fast-check": "^4.10.2",
     "motion": "^14.0.0",

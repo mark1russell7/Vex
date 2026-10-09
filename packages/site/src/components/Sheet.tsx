@@ -73,7 +73,7 @@ export default function Sheet(props: SheetProps): ReactElement {
         <span style={{ color: "var(--color-ink-muted)" }}>fx </span>
         {selectedProgram === undefined || selected === undefined ? "Select a computed cell." : `${selected.key}: ${selectedProgram.code.replaceAll("\n", " ")}`}
       </div>
-      <div style={{ overflowX: "auto" }}>
+      <div style={{ overflowX: "auto" }} tabIndex={0} role="region" aria-label="The cells of the sheet">
         <table className="vx-table">
           <thead>
             <tr>

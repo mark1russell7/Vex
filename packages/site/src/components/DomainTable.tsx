@@ -29,8 +29,8 @@ export default function DomainTable(props: { readonly name?: string }): ReactEle
               {Object.keys(d.ops).length} ops{d.fromScalar === undefined ? "" : " · fromScalar"}{d.valid === undefined ? "" : " · valid"}{d.encode === undefined ? "" : " · encode/decode"}{d.methods === "all" ? " · methods: all" : ""}
             </span>
           </header>
-          <div style={{ overflowX: "auto" }}>
-            <table className="vx-table">
+          <div style={{ overflowX: "auto" }} tabIndex={0} role="region" aria-label={`The ops of ${d.name}`}>
+            <table className="vx-table" style={{ display: "table" }}>
               <thead>
                 <tr>
                   <th scope="col">op</th>

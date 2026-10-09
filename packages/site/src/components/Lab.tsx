@@ -117,7 +117,7 @@ export default function Lab(): ReactElement {
       <header>
         <span className="vx-row" role="tablist" aria-label="The space">
           {LAB_SPACES.map((s) => (
-            <button key={s.id} type="button" role="tab" aria-selected={s.id === spaceId} className="vx-button" aria-pressed={s.id === spaceId} onClick={() => pickSpace(s.id)}>
+            <button key={s.id} type="button" role="tab" aria-selected={s.id === spaceId} className="vx-button" onClick={() => pickSpace(s.id)}>
               {s.title}
             </button>
           ))}
@@ -238,7 +238,7 @@ export default function Lab(): ReactElement {
       </details>
       <details className="vx-body">
         <summary>The program as JSON</summary>
-        <pre className="vx-code" style={{ maxHeight: "18rem", overflow: "auto" }}>
+        <pre className="vx-code" style={{ maxHeight: "18rem", overflow: "auto" }} tabIndex={0} role="region" aria-label="The program as JSON">
           {json}
         </pre>
       </details>

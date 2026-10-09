@@ -30,3 +30,6 @@ Write all prose of this repository in the style of ASD-STE100 Simplified Technic
 - Start `pnpm check` before a commit. It does the type check, Oxlint, the coverage, the tests, the doc tests and `ste-lint`.
 - A code block of the docs with the meta word `doctest` is a test. Write `// => value` for a value and `// : Type` for a type.
 - A golden file in `packages/core/src/__golden__` changes only with a change of the semantics. To accept it, start `vitest run -u`.
+- The coverage of each published package must stay at 98, 96, 98 and 98 or more. The root `vitest.config.ts` sets these gates.
+- The mutation lane (`pnpm --filter @vex/mutation run mutation`) fails under 95 %. Write a test that finds each surviving mutant.
+- Disable a mutant only if it is equivalent. Write `// Stryker disable next-line <Mutator>: <reason>` above the line.

@@ -8,6 +8,27 @@ const site = "https://mark1russell7.github.io";
 // The share card of each page (Open Graph and Twitter). scripts/og-image.mjs renders it.
 const card = `${site}${base}/og.png`;
 
+/** @typedef {{ type: string, tagName?: string, properties?: Record<string, unknown>, children?: HastNode[] }} HastNode */
+
+/**
+ * This function makes each pre element in the tree focusable.
+ * @param {HastNode} node
+ * @returns {void}
+ */
+function focusPre(node) {
+  if (node.type === "element" && node.tagName === "pre") node.properties = { ...node.properties, tabIndex: 0 };
+  for (const child of node.children ?? []) focusPre(child);
+}
+
+// A long code block scrolls. This Expressive Code plugin makes each pre element focusable, so a keyboard can scroll it.
+const focusablePre = {
+  name: "vex-focusable-pre",
+  hooks: {
+    /** @param {{ renderData: { blockAst: HastNode } }} context */
+    postprocessRenderedBlock: (context) => focusPre(context.renderData.blockAst),
+  },
+};
+
 export default defineConfig({
   site,
   base,
@@ -36,6 +57,7 @@ export default defineConfig({
         "./src/styles/theme.css",
       ],
       components: { Hero: "./src/components/Hero.astro" },
+      expressiveCode: { plugins: [focusablePre] },
       sidebar: [
         { label: "Learn", items: ["learn/tour", "learn/concepts", "learn/spreadsheet", "learn/sheets", "learn/axes", "learn/errors"] },
         { label: "Lab", items: ["lab"] },

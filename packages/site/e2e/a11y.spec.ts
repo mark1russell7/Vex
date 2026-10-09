@@ -20,3 +20,12 @@ for (const scheme of ["light", "dark"] as const) {
     }
   });
 }
+
+// A code block scrolls when its lines are wider than the page, and the width depends on the fonts of the system.
+// Thus each code block takes the keyboard focus on each system, and the check does not depend on the fonts.
+test("each code block of the docs takes the keyboard focus", async ({ page }) => {
+  await page.goto("./learn/sheets/");
+  const blocks = page.locator(".expressive-code pre");
+  expect(await blocks.count()).toBeGreaterThan(0);
+  for (const tabindex of await blocks.evaluateAll((all) => all.map((p) => p.getAttribute("tabindex")))) expect(tabindex).toBe("0");
+});
